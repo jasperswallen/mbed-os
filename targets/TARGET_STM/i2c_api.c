@@ -80,6 +80,41 @@ static I2C_HandleTypeDef *i2c_handles[I2C_NUM];
 */
 #define FLAG_TIMEOUT ((int)0x1000)
 
+#if defined(USE_I2C_DMA)
+#define I2C1_DMA_CLK_ENABLE()           __HAL_RCC_DMA1_CLK_ENABLE()
+#define I2C1_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
+
+#define I2C2_DMA_CLK_ENABLE()           __HAL_RCC_DMA1_CLK_ENABLE()
+#define I2C2_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
+
+
+/* Definition for I2C1's DMA */
+#define I2C1_DMA_INSTANCE_TX            DMA1_Channel1
+#define I2C1_DMA_INSTANCE_RX            DMA1_Channel2
+#define I2C1_DMA_TX_IRQn                DMA1_Channel1_IRQn
+#define I2C1_DMA_RX_IRQn                DMA1_Channel2_IRQn
+#define I2C1_DMA_TX_IRQHandler          DMA1_Channel1_IRQHandler
+#define I2C1_DMA_RX_IRQHandler          DMA1_Channel2_IRQHandler
+
+/* Definition for I2C2's DMA */
+#define I2C2_DMA_INSTANCE_TX            DMA1_Channel3
+#define I2C2_DMA_INSTANCE_RX            DMA1_Channel4
+#define I2C2_DMA_TX_IRQn                DMA1_Channel3_IRQn
+#define I2C2_DMA_RX_IRQn                DMA1_Channel4_IRQn
+#define I2C2_DMA_TX_IRQHandler          DMA1_Channel3_IRQHandler
+#define I2C2_DMA_RX_IRQHandler          DMA1_Channel4_IRQHandler
+
+enum HDMA_INDEX {
+    I2C1_TX,
+    I2C1_RX,
+    I2C2_TX,
+    I2C2_RX,
+    MAX_HDMA
+};
+
+DMA_HandleTypeDef hdma[MAX_HDMA];
+#endif
+
 /* Declare i2c_init_internal to be used in this file */
 void i2c_init_internal(i2c_t *obj, PinName sda, PinName scl);
 
@@ -126,6 +161,50 @@ static void i2c5_irq(void)
 }
 #endif
 
+#if defined(USE_I2C_DMA)
+/**
+  * @brief  This function handles DMA interrupt request.
+  * @param  None
+  * @retval None
+  */
+void I2C1_DMA_TX_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(&hdma[I2C1_TX]);
+}
+
+
+/**
+  * @brief  This function handles DMA interrupt request.
+  * @param  None
+  * @retval None
+  */
+void I2C1_DMA_RX_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(&hdma[I2C1_RX]);
+}
+
+/**
+  * @brief  This function handles DMA interrupt request.
+  * @param  None
+  * @retval None
+  */
+void I2C2_DMA_TX_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(&hdma[I2C2_TX]);
+}
+
+
+/**
+  * @brief  This function handles DMA interrupt request.
+  * @param  None
+  * @retval None
+  */
+void I2C2_DMA_RX_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(&hdma[I2C2_RX]);
+}
+#endif
+
 void i2c_ev_err_enable(i2c_t *obj, uint32_t handler)
 {
     struct i2c_s *obj_s = I2C_S(obj);
@@ -152,6 +231,28 @@ void i2c_ev_err_enable(i2c_t *obj, uint32_t handler)
     NVIC_SetPriority(irq_error_n, prio);
     NVIC_EnableIRQ(irq_event_n);
     NVIC_EnableIRQ(irq_error_n);
+
+#if defined(USE_I2C_DMA)
+    if (obj_s->handle.Instance == I2C1) {
+        /* Configure the NVIC for DMA */
+        /* NVIC configuration for DMA transfer complete interrupt (I2Cx_TX) */
+        NVIC_SetPriority(I2C1_DMA_TX_IRQn, prio);
+        NVIC_EnableIRQ(I2C1_DMA_TX_IRQn);
+
+        /* NVIC configuration for DMA transfer complete interrupt (I2Cx_RX) */
+        NVIC_SetPriority(I2C1_DMA_RX_IRQn, prio);
+        NVIC_EnableIRQ(I2C1_DMA_RX_IRQn);
+    } else if (obj_s->handle.Instance == I2C2) {
+        /* Configure the NVIC for DMA */
+        /* NVIC configuration for DMA transfer complete interrupt (I2Cx_TX) */
+        NVIC_SetPriority(I2C2_DMA_TX_IRQn, prio);
+        NVIC_EnableIRQ(I2C2_DMA_TX_IRQn);
+
+        /* NVIC configuration for DMA transfer complete interrupt (I2Cx_RX) */
+        NVIC_SetPriority(I2C2_DMA_RX_IRQn, prio);
+        NVIC_EnableIRQ(I2C2_DMA_RX_IRQn);
+    }
+#endif
 }
 
 void i2c_ev_err_disable(i2c_t *obj)
@@ -271,6 +372,7 @@ void i2c_init(i2c_t *obj, PinName sda, PinName scl)
 void i2c_init_internal(i2c_t *obj, PinName sda, PinName scl)
 {
     struct i2c_s *obj_s = I2C_S(obj);
+    I2C_HandleTypeDef *handle = &(obj_s->handle);
 
     // Determine the I2C to use
     I2CName i2c_sda = (I2CName)pinmap_peripheral(sda, PinMap_I2C_SDA);
@@ -281,6 +383,11 @@ void i2c_init_internal(i2c_t *obj, PinName sda, PinName scl)
     obj_s->i2c = (I2CName)pinmap_merge(i2c_sda, i2c_scl);
     MBED_ASSERT(obj_s->i2c != (I2CName)NC);
 
+#if defined(USE_I2C_DMA)
+    // Default don't use DMA
+    obj_s->useDMA = 0;
+#endif;
+
 #if defined I2C1_BASE
     // Enable I2C1 clock and pinout if not done
     if (obj_s->i2c == I2C_1) {
@@ -289,6 +396,46 @@ void i2c_init_internal(i2c_t *obj, PinName sda, PinName scl)
         // Configure I2C pins
         obj_s->event_i2cIRQ = I2C1_EV_IRQn;
         obj_s->error_i2cIRQ = I2C1_ER_IRQn;
+#if defined(USE_I2C_DMA)
+        // Initialise DMA for I2C
+        obj_s->useDMA = 1;
+
+        I2C1_DMA_CLK_ENABLE();
+        I2C1_DMAMUX_CLK_ENABLE();
+
+        /* Configure the DMA Channels */
+        /* Configure the DMA handler for Transmission process */
+        hdma[I2C1_TX].Instance                 = I2C1_DMA_INSTANCE_TX;
+        hdma[I2C1_TX].Init.Request             = DMA_REQUEST_I2C1_TX;
+        hdma[I2C1_TX].Init.Direction           = DMA_MEMORY_TO_PERIPH;
+        hdma[I2C1_TX].Init.PeriphInc           = DMA_PINC_DISABLE;
+        hdma[I2C1_TX].Init.MemInc              = DMA_MINC_ENABLE;
+        hdma[I2C1_TX].Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+        hdma[I2C1_TX].Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+        hdma[I2C1_TX].Init.Mode                = DMA_NORMAL;
+        hdma[I2C1_TX].Init.Priority            = DMA_PRIORITY_LOW;
+
+        HAL_DMA_Init(&hdma[I2C1_TX]);
+
+        /* Associate the initialized DMA handle to the the I2C handle */
+        __HAL_LINKDMA(handle, hdmatx, hdma[I2C1_TX]);
+
+        /* Configure the DMA handler for Transmission process */
+        hdma[I2C1_RX].Instance                 = I2C1_DMA_INSTANCE_RX;
+        hdma[I2C1_RX].Init.Request             = DMA_REQUEST_I2C1_RX;
+        hdma[I2C1_RX].Init.Direction           = DMA_PERIPH_TO_MEMORY;
+        hdma[I2C1_RX].Init.PeriphInc           = DMA_PINC_DISABLE;
+        hdma[I2C1_RX].Init.MemInc              = DMA_MINC_ENABLE;
+        hdma[I2C1_RX].Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+        hdma[I2C1_RX].Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+        hdma[I2C1_RX].Init.Mode                = DMA_NORMAL;
+        hdma[I2C1_RX].Init.Priority            = DMA_PRIORITY_HIGH;
+
+        HAL_DMA_Init(&hdma[I2C1_RX]);
+
+        /* Associate the initialized DMA handle to the the I2C handle */
+        __HAL_LINKDMA(handle, hdmarx, hdma[I2C1_RX]);
+#endif
     }
 #endif
 #if defined I2C2_BASE
@@ -298,6 +445,46 @@ void i2c_init_internal(i2c_t *obj, PinName sda, PinName scl)
         __HAL_RCC_I2C2_CLK_ENABLE();
         obj_s->event_i2cIRQ = I2C2_EV_IRQn;
         obj_s->error_i2cIRQ = I2C2_ER_IRQn;
+#if defined(USE_I2C_DMA)
+        // Initialise DMA for I2C
+        obj_s->useDMA = 1;
+
+        I2C2_DMA_CLK_ENABLE();
+        I2C2_DMAMUX_CLK_ENABLE();
+
+        /* Configure the DMA Channels */
+        /* Configure the DMA handler for Transmission process */
+        hdma[I2C2_TX].Instance                 = I2C2_DMA_INSTANCE_TX;
+        hdma[I2C2_TX].Init.Request             = DMA_REQUEST_I2C2_TX;
+        hdma[I2C2_TX].Init.Direction           = DMA_MEMORY_TO_PERIPH;
+        hdma[I2C2_TX].Init.PeriphInc           = DMA_PINC_DISABLE;
+        hdma[I2C2_TX].Init.MemInc              = DMA_MINC_ENABLE;
+        hdma[I2C2_TX].Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+        hdma[I2C2_TX].Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+        hdma[I2C2_TX].Init.Mode                = DMA_NORMAL;
+        hdma[I2C2_TX].Init.Priority            = DMA_PRIORITY_LOW;
+
+        HAL_DMA_Init(&hdma[I2C2_TX]);
+
+        /* Associate the initialized DMA handle to the the I2C handle */
+        __HAL_LINKDMA(handle, hdmatx, hdma[I2C2_TX]);
+
+        /* Configure the DMA handler for Transmission process */
+        hdma[I2C2_RX].Instance                 = I2C2_DMA_INSTANCE_RX;
+        hdma[I2C2_RX].Init.Request             = DMA_REQUEST_I2C2_RX;
+        hdma[I2C2_RX].Init.Direction           = DMA_PERIPH_TO_MEMORY;
+        hdma[I2C2_RX].Init.PeriphInc           = DMA_PINC_DISABLE;
+        hdma[I2C2_RX].Init.MemInc              = DMA_MINC_ENABLE;
+        hdma[I2C2_RX].Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+        hdma[I2C2_RX].Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+        hdma[I2C2_RX].Init.Mode                = DMA_NORMAL;
+        hdma[I2C2_RX].Init.Priority            = DMA_PRIORITY_HIGH;
+
+        HAL_DMA_Init(&hdma[I2C2_RX]);
+
+        /* Associate the initialized DMA handle to the the I2C handle */
+        __HAL_LINKDMA(handle, hdmarx, hdma[I2C2_RX]);
+#endif
     }
 #endif
 #if defined I2C3_BASE
@@ -786,7 +973,14 @@ int i2c_read(i2c_t *obj, int address, char *data, int length, int stop)
     */
     i2c_ev_err_enable(obj, i2c_get_irq_handler(obj));
 
-    ret = HAL_I2C_Master_Sequential_Receive_IT(handle, address, (uint8_t *) data, length, obj_s->XferOperation);
+#if defined(USE_I2C_DMA)
+    if (obj_s->useDMA == 1) {
+        ret = HAL_I2C_Master_Sequential_Receive_DMA(handle, address, (uint8_t *) data, length, obj_s->XferOperation);
+    } else
+#endif
+    {
+        ret = HAL_I2C_Master_Sequential_Receive_IT(handle, address, (uint8_t *) data, length, obj_s->XferOperation);
+    }
 
     if (ret == HAL_OK) {
         timeout = BYTE_TIMEOUT_US * (length + 1);
@@ -840,7 +1034,14 @@ int i2c_write(i2c_t *obj, int address, const char *data, int length, int stop)
 
     i2c_ev_err_enable(obj, i2c_get_irq_handler(obj));
 
-    ret = HAL_I2C_Master_Sequential_Transmit_IT(handle, address, (uint8_t *) data, length, obj_s->XferOperation);
+#if defined(USE_I2C_DMA)
+    if (obj_s->useDMA == 1) {
+        ret = HAL_I2C_Master_Sequential_Transmit_DMA(handle, address, (uint8_t *) data, length, obj_s->XferOperation);
+    } else
+#endif
+    {
+        ret = HAL_I2C_Master_Sequential_Transmit_IT(handle, address, (uint8_t *) data, length, obj_s->XferOperation);
+    }
 
     if (ret == HAL_OK) {
         timeout = BYTE_TIMEOUT_US * (length + 1);
@@ -875,12 +1076,21 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
     /* Handle potential Tx/Rx use case */
     if ((obj->tx_buff.length) && (obj->rx_buff.length)) {
         if (obj_s->stop) {
+
             obj_s->XferOperation = I2C_LAST_FRAME;
         } else {
             obj_s->XferOperation = I2C_NEXT_FRAME;
         }
 
-        HAL_I2C_Master_Sequential_Receive_IT(hi2c, obj_s->address, (uint8_t *)obj->rx_buff.buffer, obj->rx_buff.length, obj_s->XferOperation);
+#if defined(USE_I2C_DMA)
+        if (obj_s->useDMA == 1) {
+            HAL_I2C_Master_Sequential_Receive_DMA(hi2c, obj_s->address, (uint8_t *)obj->rx_buff.buffer, obj->rx_buff.length, obj_s->XferOperation);
+        } else
+#endif
+        {
+            HAL_I2C_Master_Sequential_Receive_IT(hi2c, obj_s->address, (uint8_t *)obj->rx_buff.buffer, obj->rx_buff.length, obj_s->XferOperation);
+        }
+
     } else
 #endif
     {
@@ -1162,11 +1372,26 @@ void i2c_transfer_asynch(i2c_t *obj, const void *tx, size_t tx_length, void *rx,
         }
 
         if (tx_length > 0) {
-            HAL_I2C_Master_Sequential_Transmit_IT(handle, address, (uint8_t *)tx, tx_length, obj_s->XferOperation);
+#if defined(USE_I2C_DMA)
+            if (obj_s->useDMA == 1) {
+                HAL_I2C_Master_Sequential_Transmit_DMA(handle, address, (uint8_t *)tx, tx_length, obj_s->XferOperation);
+            } else
+#endif
+            {
+                HAL_I2C_Master_Sequential_Transmit_IT(handle, address, (uint8_t *)tx, tx_length, obj_s->XferOperation);
+            }
         }
         if (rx_length > 0) {
-            HAL_I2C_Master_Sequential_Receive_IT(handle, address, (uint8_t *)rx, rx_length, obj_s->XferOperation);
+#if defined(USE_I2C_DMA)
+            if (obj_s->useDMA == 1) {
+                HAL_I2C_Master_Sequential_Receive_DMA(handle, address, (uint8_t *)rx, rx_length, obj_s->XferOperation);
+            } else
+#endif
+            {
+                HAL_I2C_Master_Sequential_Receive_IT(handle, address, (uint8_t *)rx, rx_length, obj_s->XferOperation);
+            }
         }
+
     } else if (tx_length && rx_length) {
         /* Two steps operation, don't modify XferOperation, keep it for next step */
         // Trick to remove compiler warning "left and right operands are identical" in some cases
@@ -1176,7 +1401,14 @@ void i2c_transfer_asynch(i2c_t *obj, const void *tx, size_t tx_length, void *rx,
             HAL_I2C_Master_Sequential_Transmit_IT(handle, address, (uint8_t *)tx, tx_length, I2C_FIRST_FRAME);
         } else if ((obj_s->XferOperation == I2C_FIRST_FRAME) ||
                    (obj_s->XferOperation == I2C_NEXT_FRAME)) {
-            HAL_I2C_Master_Sequential_Transmit_IT(handle, address, (uint8_t *)tx, tx_length, I2C_NEXT_FRAME);
+#if defined(USE_I2C_DMA)
+            if (obj_s->useDMA == 1) {
+                HAL_I2C_Master_Sequential_Transmit_DMA(handle, address, (uint8_t *)tx, tx_length, I2C_FIRST_FRAME);
+            } else
+#endif
+            {
+                HAL_I2C_Master_Sequential_Transmit_IT(handle, address, (uint8_t *)tx, tx_length, I2C_FIRST_FRAME);
+            }
         }
     }
 }

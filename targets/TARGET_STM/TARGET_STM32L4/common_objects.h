@@ -87,6 +87,11 @@ struct serial_s {
 #endif
 };
 
+// I2C DMA implementation is yet only proposed for STM32L4R5xI (with DMAMUX)
+#if defined(TARGET_STM32L4R5xI)
+#define USE_I2C_DMA
+#endif
+
 struct i2c_s {
     /*  The 1st 2 members I2CName i2c
      *  and I2C_HandleTypeDef handle should
@@ -113,6 +118,9 @@ struct i2c_s {
     uint32_t address;
     uint8_t stop;
     uint8_t available_events;
+#endif
+#if defined(USE_I2C_DMA)
+    uint32_t useDMA;
 #endif
 };
 
