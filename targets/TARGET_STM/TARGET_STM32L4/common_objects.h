@@ -43,6 +43,11 @@
 extern "C" {
 #endif
 
+// I2C DMA implementation is yet only proposed for STM32L4R5xI (with DMAMUX)
+#if defined(TARGET_STM32L4R5xI)
+#define USE_I2C_DMA
+#define USE_SPI_DMA
+#endif
 
 struct pwmout_s {
     PWMName pwm;
@@ -55,6 +60,7 @@ struct pwmout_s {
 };
 
 struct spi_s {
+    /* handle must be the 1st element of the structure as we will retrieve the structure from the handle  */
     SPI_HandleTypeDef handle;
     IRQn_Type spiIRQ;
     SPIName spi;
@@ -65,6 +71,10 @@ struct spi_s {
 #if DEVICE_SPI_ASYNCH
     uint32_t event;
     uint8_t transfer_type;
+#endif
+#if defined(USE_SPI_DMA)
+    uint32_t useDMA;
+    uint32_t handler;
 #endif
 };
 
@@ -86,11 +96,6 @@ struct serial_s {
     PinName pin_cts;
 #endif
 };
-
-// I2C DMA implementation is yet only proposed for STM32L4R5xI (with DMAMUX)
-#if defined(TARGET_STM32L4R5xI)
-#define USE_I2C_DMA
-#endif
 
 struct i2c_s {
     /*  The 1st 2 members I2CName i2c

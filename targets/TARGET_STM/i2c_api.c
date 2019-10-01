@@ -386,7 +386,7 @@ void i2c_init_internal(i2c_t *obj, PinName sda, PinName scl)
 #if defined(USE_I2C_DMA)
     // Default don't use DMA
     obj_s->useDMA = 0;
-#endif;
+#endif
 
 #if defined I2C1_BASE
     // Enable I2C1 clock and pinout if not done
