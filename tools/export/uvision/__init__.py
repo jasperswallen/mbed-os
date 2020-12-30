@@ -132,14 +132,10 @@ class Uvision(Exporter):
     """
 
     POST_BINARY_WHITELIST = set([
-        "MCU_NRF51Code.binary_hook",
-        "TEENSY3_1Code.binary_hook",
         "LPCTargetCode.lpc_patch",
-        "LPC4088Code.binary_hook",
-        "MTSCode.combine_bins_mts_dot",
         "MTSCode.combine_bins_mts_dragonfly",
-        "NCS36510TargetCode.ncs36510_addfib",
-        "LPC55S69Code.binary_hook"
+        "LPC55S69Code.binary_hook",
+        "M2351Code.merge_secure"
     ])
 
     # File associations within .uvprojx file
@@ -309,10 +305,10 @@ class Uvision(Exporter):
             std = None
         cpp_std = {
             'c++98': 1, 'gnu++98': 2,
-            'c++03': 5, 'gnu++03': 2, # UVision 5.27.1.0 does not support gnu++03 - fall back to gnu++98
+            'c++03': 5, 'gnu++03': 2, # UVision 5.28 does not support gnu++03 - fall back to gnu++98
             'c++11': 3, 'gnu++11': 4,
-            'c++14': 6, 'gnu++14': 4, # UVision 5.27.1.0 does not support gnu++14 - should be able to get it as compiler default, but that doesn't work as documented and requests gnu++98. So fall back to gnu++11
-            'c++17': 6, 'gnu++17': 4, # UVision 5.27.1.0 does not support c++17/gnu++17 - fall back to c++14/gnu++11
+            'c++14': 6, 'gnu++14': 7, # UVision 5.28 or later is required for gnu++14, c++14 or gnu++17
+            'c++17': 8, 'gnu++17': 9,
         }
         ctx['v6_lang_p'] = cpp_std.get(std, 0)
 
@@ -390,23 +386,26 @@ class UvisionArmc5(Uvision):
     @classmethod
     def is_target_supported(cls, target_name):
         target = TARGET_MAP[target_name]
-        if int(target.build_tools_metadata["version"]) > 0:
-            #Just check for ARMC5 as ARMC5 must be there irrespective of whether uARM is there or not if the target is staying with ARMC5
-            if "ARMC5" not in target.supported_toolchains:
-                return False
-        else:
-            if not (set(target.supported_toolchains).intersection(
-                    set(["ARM", "uARM"]))):
-                return False
+        if not target.is_TFM_target:
+            if int(target.build_tools_metadata["version"]) > 0:
+                # Just check for ARMC5 as ARMC5 must be there irrespective of whether uARM is there or not if the target is staying with ARMC5
+                if "ARMC5" not in target.supported_toolchains:
+                    return False
+            else:
+                if not (set(target.supported_toolchains).intersection(
+                        set(["ARM", "uARM"]))):
+                    return False
 
-        if not DeviceCMSIS.check_supported(target_name):
-            return False
-        if "Cortex-A" in target.core:
-            return False
-        if not hasattr(target, "post_binary_hook"):
-            return True
-        if target.post_binary_hook['function'] in cls.POST_BINARY_WHITELIST:
-            return True
+            if not DeviceCMSIS.check_supported(target_name):
+                return False
+            if "Cortex-A" in target.core:
+                return False
+            if not hasattr(target, "post_binary_hook"):
+                return True
+            if target.post_binary_hook['function'] in cls.POST_BINARY_WHITELIST:
+                return True
+            else:
+                return False
         else:
             return False
 
@@ -419,21 +418,24 @@ class UvisionArmc6(Uvision):
     @classmethod
     def is_target_supported(cls, target_name):
         target = TARGET_MAP[target_name]
-        if int(target.build_tools_metadata["version"]) > 0:
-            if not len(set(target.supported_toolchains).intersection(
-                    set(["ARM", "ARMC6"]))) > 0:
-                return False
-        else:
-            if "ARMC6" not in target.supported_toolchains:
-                return False
+        if not target.is_TFM_target:
+            if int(target.build_tools_metadata["version"]) > 0:
+                if not len(set(target.supported_toolchains).intersection(
+                        set(["ARM", "ARMC6"]))) > 0:
+                    return False
+            else:
+                if "ARMC6" not in target.supported_toolchains:
+                    return False
 
-        if not DeviceCMSIS.check_supported(target_name):
-            return False
-        if "Cortex-A" in target.core:
-            return False
-        if not hasattr(target, "post_binary_hook"):
-            return True
-        if target.post_binary_hook['function'] in cls.POST_BINARY_WHITELIST:
-            return True
+            if not DeviceCMSIS.check_supported(target_name):
+                return False
+            if "Cortex-A" in target.core:
+                return False
+            if not hasattr(target, "post_binary_hook"):
+                return True
+            if target.post_binary_hook['function'] in cls.POST_BINARY_WHITELIST:
+                return True
+            else:
+                return False
         else:
             return False

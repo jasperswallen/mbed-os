@@ -1,5 +1,7 @@
-/* mbed Microcontroller Library
- * Copyright (c) 2017-2018 Nuvoton
+/*
+ * Copyright (c) 2017-2018, Nuvoton Technology Corporation
+ *
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,12 +81,6 @@ void us_ticker_init(void)
     }
     ticker_inited = 1;
 
-    /* Reset module
-     *
-     * NOTE: We must call secure version (from non-secure domain) because SYS/CLK regions are secure.
-     */
-    SYS_ResetModule_S(TIMER_MODINIT.rsetidx);
-
     /* Select IP clock source
      *
      * NOTE: We must call secure version (from non-secure domain) because SYS/CLK regions are secure.
@@ -96,6 +92,12 @@ void us_ticker_init(void)
      * NOTE: We must call secure version (from non-secure domain) because SYS/CLK regions are secure.
      */
     CLK_EnableModuleClock_S(TIMER_MODINIT.clkidx);
+
+    /* Reset module
+     *
+     * NOTE: We must call secure version (from non-secure domain) because SYS/CLK regions are secure.
+     */
+    SYS_ResetModule_S(TIMER_MODINIT.rsetidx);
 
     TIMER_T *timer_base = (TIMER_T *) NU_MODBASE(TIMER_MODINIT.modname);
 

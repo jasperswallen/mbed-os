@@ -1,12 +1,12 @@
 /***************************************************************************//**
 * \file cy_sar.h
-* \version 1.20
+* \version 1.20.3
 *
 * Header file for the SAR driver.
 *
 ********************************************************************************
 * \copyright
-* Copyright 2017-2019 Cypress Semiconductor Corporation
+* Copyright 2017-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,9 +27,9 @@
 * \{
 * This driver configures and controls the SAR ADC subsystem block.
 *
-* The functions and other declarations used in this driver are in cy_sar.h. 
-* You can include cy_pdl.h (ModusToolbox only) to get access to all functions 
-* and declarations in the PDL. 
+* The functions and other declarations used in this driver are in cy_sar.h.
+* You can include cy_pdl.h to get access to all functions
+* and declarations in the PDL.
 *
 * This SAR ADC subsystem is comprised of:
 *   - a 12-bit SAR converter (SARADC)
@@ -91,7 +91,7 @@
 *   - \ref cy_en_sar_ctrl_sarmux_deep_sleep_t
 *   - \ref cy_en_sar_ctrl_sarseq_routing_switches_t
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_SAR_CTRL
+* \snippet sar/snippet/main.c SNIPPET_CTRL
 *
 * \subsection group_sar_init_struct_sampleCtrl uint32_t sampleCtrl
 *
@@ -104,7 +104,7 @@
 *   - \ref cy_en_sar_sample_ctrl_avg_mode_t
 *   - \ref cy_en_sar_sample_ctrl_trigger_mode_t
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_SAMPLE_CTRL
+* \snippet sar/snippet/main.c SNIPPET_SAR_SAMPLE_CTRL
 *
 * \subsection group_sar_init_struct_sampleTime01 uint32_t sampleTime01
 *
@@ -120,14 +120,14 @@
 *
 * Use the shifts defined in \ref cy_en_sar_sample_time_shift_t.
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_SAMPLE_TIME01
+* \snippet sar/snippet/main.c SNIPPET_SAR_SAMPLE_TIME01
 *
 * \subsection group_sar_init_struct_sampleTime23 uint32_t sampleTime23
 *
 * This field configures the value for sample times 2 and 3 in ADC clock cycles.
 * Use the shifts defined in \ref cy_en_sar_sample_time_shift_t.
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_SAMPLE_TIME23
+* \snippet sar/snippet/main.c SNIPPET_SAR_SAMPLE_TIME23
 *
 * \subsection group_sar_init_struct_rangeThres uint32_t rangeThres
 *
@@ -144,7 +144,7 @@
 *
 * The \ref Cy_SAR_SetLowLimit and \ref Cy_SAR_SetHighLimit provide run-time configurability of these thresholds.
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_RANGE_THRES
+* \snippet sar/snippet/main.c SNIPPET_SAR_RANGE_THRES
 *
 * \subsection group_sar_init_struct_rangeCond cy_en_sar_range_detect_condition_t rangeCond
 *
@@ -188,7 +188,7 @@
 * it is not controlling any switches (\ref group_sar_init_struct_muxSwitchSqCtrl = 0), the port and pin addresses
 * are ignored. This is possible when there is only one channel to scan.
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_CHAN_CONFIG
+* \snippet sar/snippet/main.c SNIPPET_SAR_CHAN_CONFIG
 *
 * \subsection group_sar_init_struct_intrMask uint32_t intrMask
 *
@@ -197,7 +197,7 @@
 * Select one or more values from the \ref cy_en_sar_intr_mask_t enum and "OR" them
 * together.
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_INTR_MASK
+* \snippet sar/snippet/main.c SNIPPET_SAR_INTR_MASK
 *
 * \subsection group_sar_init_struct_satIntrMask uint32_t satIntrMask
 *
@@ -225,7 +225,7 @@
 * If the SARSEQ is enabled, the SARMUX switches that will be used must
 * also be closed using this firmware control.
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_MUX_SWITCH
+* \snippet sar/snippet/main.c SNIPPET_SAR_MUX_SWITCH
 *
 * Firmware control can be changed at run-time by calling \ref Cy_SAR_SetAnalogSwitch with \ref CY_SAR_MUX_SWITCH0
 * and the desired switch states.
@@ -238,7 +238,7 @@
 *
 * Use one or more values from the \ref cy_en_sar_mux_switch_sq_ctrl_t enum and "OR" them together.
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_MUX_SQ_CTRL
+* \snippet sar/snippet/main.c SNIPPET_SAR_MUX_SQ_CTRL
 *
 * SARSEQ control can be changed at run-time by calling \ref Cy_SAR_SetSwitchSarSeqCtrl.
 *
@@ -305,7 +305,7 @@
 * When making the required \ref Cy_TrigMux_Connect calls, use the pre-defined enum, TRIG6_OUT_PASS_TR_SAR_IN,
 * for the SAR trigger input.
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_CONFIG_TRIGGER
+* \snippet sar/snippet/main.c SNIPPET_SAR_CONFIG_TRIGGER
 *
 * \section group_sar_handle_interrupts Handling Interrupts
 *
@@ -328,11 +328,11 @@
 * When servicing an interrupt, the user must clear the interrupt so that subsequent
 * interrupts can be handled.
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_ISR
+* \snippet sar/snippet/main.c SNIPPET_SAR_ISR
 *
 * The following code snippet demonstrates how to configure and enable the interrupt.
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_CONFIG_INTR
+* \snippet sar/snippet/main.c SNIPPET_SAR_CONFIG_INTR
 *
 * Alternately, instead of handling the interrupts, the \ref Cy_SAR_IsEndConversion function
 * allows for firmware polling of the end of conversion status.
@@ -350,7 +350,7 @@
 * Set the clock divider value to achieve the desired clock rate. The SAR can support
 * a maximum frequency of 18 MHz.
 *
-* \snippet sar_sut_01.cydsn/main_cm4.c SAR_SNIPPET_CONFIGURE_CLOCK
+* \snippet sar/snippet/main.c SAR_SNIPPET_CONFIGURE_CLOCK
 *
 * \section group_sar_scan_time Scan Rate
 *
@@ -468,7 +468,7 @@
 *
 * \image html sar_sarmux_dietemp.png
 *
-* \snippet sar_sut_02.cydsn/main_cm4.c SNIPPET_SAR_SARMUX_DIETEMP
+* \snippet sar/snippet/main.c SNIPPET_SAR_SARMUX_DIETEMP
 *
 * \subsection group_sar_sarmux_se_diff Input from SARMUX port
 *
@@ -477,7 +477,7 @@
 *
 * \image html sar_sarmux_dedicated_port.png
 *
-* \snippet sar_sut_02.cydsn/main_cm4.c SNIPPET_SAR_SARMUX_SE_DIFF
+* \snippet sar/snippet/main.c SNIPPET_SAR_SARMUX_SE_DIFF
 *
 * \subsection group_sar_sarmux_ctb Input from CTB output visa SARBUS0/1
 *
@@ -488,7 +488,7 @@
 *
 * \image html sar_sarmux_ctb.png
 *
-* \snippet sar_sut_02.cydsn/main_cm4.c SNIPPET_SAR_SARMUX_CTB
+* \snippet sar/snippet/main.c SNIPPET_SAR_SARMUX_CTB
 *
 * \subsection group_sar_sarmux_amuxbus Input from other pins through AMUXBUSA/B
 *
@@ -496,12 +496,24 @@
 * are connected to the SARADC as separate single-ended channels and as a differential-pair channel.
 * Note that separate function calls are needed to route the device pins to the SARMUX. The AMUXBUSes
 * are separated into multiple segments and these segments are connected/disconnected using the AMUX_SPLIT_CTL
-* registers in the HSIOM. In the following code snippet, to connect Port 1 to the SARMUX, the left and right
-* switches of AMUX_SPLIT_CTL[1] and AMUX_SPLIT_CTL[6] need to be closed.
+* registers in the HSIOM.
 *
 * \image html sar_sarmux_amuxbus.png
 *
-* \snippet sar_sut_02.cydsn/main_cm4.c SNIPPET_SAR_SARMUX_AMUXBUS
+* \snippet sar/snippet/main.c SNIPPET_SAR_SARMUX_AMUXBUS
+*
+*
+* To connect SARMUX to any other non-dedicated port, you may need to close additional HSIOM switches to route signals
+* through AMUXBUS.
+* For more detail, see the device TRM, AMUX splitting.
+*
+* The following code snippet is an alternative pin configuration. To connect Port 1 to AMUXBUS, close the left and
+* right switches of AMUX_SPLIT_CTL[1] and AMUX_SPLIT_CTL[6].
+*
+* \warning
+* This snippet shows how to configure pins for CY8C6347BZI-BLD53.
+*
+* \snippet sar/snippet/main.c SNIPPET_SAR_SARMUX_CUSTOM_PORT
 *
 * \section group_sar_low_power Low Power Support
 * This SAR driver provides a callback function to handle power mode transitions.
@@ -546,6 +558,21 @@
 * <table class="doxtable">
 *   <tr><th>Version</th><th>Changes</th><th>Reason for Change</th></tr>
 *   <tr>
+*     <td>1.20.3</td>
+*     <td>Minor documentation updates.</td>
+*     <td>Documentation enhancement.</td>
+*   </tr>
+*   <tr>
+*     <td>1.20.2</td>
+*     <td>Code snippets update.</td>
+*     <td>PDL infrastructure update, documentation enhancement.</td>
+*   </tr>
+*   <tr>
+*     <td>1.20.1</td>
+*     <td>Code snippets update.</td>
+*     <td>PDL infrastructure update, documentation enhancement.</td>
+*   </tr>
+*   <tr>
 *     <td rowspan="2">1.20</td>
 *     <td>Flattened the organization of the driver source code into the single source directory and the single include directory.</td>
 *     <td>Driver library directory-structure simplification.</td>
@@ -553,7 +580,7 @@
 *   <tr>
 *     <td>Added register access layer. Use register access macros instead
 *         of direct register access using dereferenced pointers.</td>
-*     <td>Makes register access device-independent, so that the PDL does 
+*     <td>Makes register access device-independent, so that the PDL does
 *         not need to be recompiled for each supported part number.</td>
 *   </tr>
 *   <tr>
@@ -562,8 +589,8 @@
 *     <td> Correct CAP_TRIM is necessary achieving specified SAR ADC linearity</td>
 *   </tr>
 *   <tr>
-*     <td> Turn off the entire hardware block only if the SARMUX is not enabled 
-*          for Deep Sleep operation.                
+*     <td> Turn off the entire hardware block only if the SARMUX is not enabled
+*          for Deep Sleep operation.
 *     </td>
 *     <td> Improvement of the \ref Cy_SAR_DeepSleep flow</td>
 *   </tr>
@@ -1322,7 +1349,7 @@ typedef struct
 * \{
 */
 
-/** This macro is for backward compatibility macro for driver v1.10 and before, 
+/** This macro is for backward compatibility macro for driver v1.10 and before,
  * the preferred API is \ref Cy_SAR_DeepSleep */
 #define Cy_SAR_Sleep    Cy_SAR_DeepSleep
 
@@ -1471,7 +1498,7 @@ __STATIC_INLINE void Cy_SAR_Disable(SAR_Type *base)
 *
 * \funcusage
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_GET_CHAN_RESULT_UPDATED
+* \snippet sar/snippet/main.c SNIPPET_SAR_GET_CHAN_RESULT_UPDATED
 *
 *******************************************************************************/
 __STATIC_INLINE uint32_t Cy_SAR_GetChanResultUpdated(const SAR_Type *base)
@@ -1503,7 +1530,7 @@ __STATIC_INLINE uint32_t Cy_SAR_GetChanResultUpdated(const SAR_Type *base)
 *
 * \funcusage
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_SET_CHAN_MASK
+* \snippet sar/snippet/main.c SNIPPET_SAR_SET_CHAN_MASK
 *
 *******************************************************************************/
 __STATIC_INLINE void Cy_SAR_SetChanMask(SAR_Type *base, uint32_t enableMask)
@@ -1530,7 +1557,7 @@ __STATIC_INLINE void Cy_SAR_SetChanMask(SAR_Type *base, uint32_t enableMask)
 *
 * \funcusage
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_SET_RANGE_COND
+* \snippet sar/snippet/main.c SNIPPET_SAR_SET_RANGE_COND
 *
 *******************************************************************************/
 __STATIC_INLINE void Cy_SAR_SetRangeCond(SAR_Type *base, cy_en_sar_range_detect_condition_t cond)
@@ -1558,7 +1585,7 @@ __STATIC_INLINE void Cy_SAR_SetRangeCond(SAR_Type *base, cy_en_sar_range_detect_
 *
 * \funcusage
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_ISR
+* \snippet sar/snippet/main.c SNIPPET_SAR_ISR
 *
 *******************************************************************************/
 __STATIC_INLINE uint32_t Cy_SAR_GetInterruptStatus(const SAR_Type *base)
@@ -1649,7 +1676,7 @@ __STATIC_INLINE void Cy_SAR_SetInterrupt(SAR_Type *base, uint32_t intrMask)
 *
 * \funcusage
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_SET_INTERRUPT_MASK
+* \snippet sar/snippet/main.c SNIPPET_SAR_SET_INTERRUPT_MASK
 *
 *******************************************************************************/
 __STATIC_INLINE void Cy_SAR_SetInterruptMask(SAR_Type *base, uint32_t intrMask)
@@ -1675,7 +1702,7 @@ __STATIC_INLINE void Cy_SAR_SetInterruptMask(SAR_Type *base, uint32_t intrMask)
 *
 * \funcusage
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_GET_INTERRUPT_MASK
+* \snippet sar/snippet/main.c SNIPPET_SAR_GET_INTERRUPT_MASK
 *
 *******************************************************************************/
 __STATIC_INLINE uint32_t Cy_SAR_GetInterruptMask(const SAR_Type *base)
@@ -1722,7 +1749,7 @@ __STATIC_INLINE uint32_t Cy_SAR_GetInterruptStatusMasked(const SAR_Type *base)
 *
 * \funcusage
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_GET_RANGE_INTERRUPT_STATUS
+* \snippet sar/snippet/main.c SNIPPET_SAR_GET_RANGE_INTERRUPT_STATUS
 *
 *******************************************************************************/
 __STATIC_INLINE uint32_t Cy_SAR_GetRangeInterruptStatus(const SAR_Type *base)
@@ -1800,7 +1827,7 @@ __STATIC_INLINE void Cy_SAR_SetRangeInterrupt(SAR_Type *base, uint32_t chanMask)
 *
 * \funcusage
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_SET_RANGE_INTERRUPT_MASK
+* \snippet sar/snippet/main.c SNIPPET_SAR_SET_RANGE_INTERRUPT_MASK
 *
 *******************************************************************************/
 __STATIC_INLINE void Cy_SAR_SetRangeInterruptMask(SAR_Type *base, uint32_t chanMask)
@@ -1869,7 +1896,7 @@ __STATIC_INLINE uint32_t Cy_SAR_GetRangeInterruptStatusMasked(const SAR_Type *ba
 *
 * \funcusage
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_GET_SAT_INTERRUPT_STATUS
+* \snippet sar/snippet/main.c SNIPPET_SAR_GET_SAT_INTERRUPT_STATUS
 *
 *******************************************************************************/
 __STATIC_INLINE uint32_t Cy_SAR_GetSatInterruptStatus(const SAR_Type *base)
@@ -1947,7 +1974,7 @@ __STATIC_INLINE void Cy_SAR_SetSatInterrupt(SAR_Type *base, uint32_t chanMask)
 *
 * \funcusage
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_GET_SAT_INTERRUPT_MASK
+* \snippet sar/snippet/main.c SNIPPET_SAR_GET_SAT_INTERRUPT_MASK
 *
 *******************************************************************************/
 __STATIC_INLINE void Cy_SAR_SetSatInterruptMask(SAR_Type *base, uint32_t chanMask)
@@ -2049,7 +2076,7 @@ __STATIC_INLINE uint32_t Cy_SAR_GetInterruptCause(const SAR_Type *base)
 *
 * \funcusage
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_IS_CHANNEL_DIFF
+* \snippet sar/snippet/main.c SNIPPET_SAR_IS_CHANNEL_DIFF
 *
 *******************************************************************************/
 __STATIC_INLINE bool Cy_SAR_IsChannelDifferential(const SAR_Type *base, uint32_t chan)
@@ -2079,7 +2106,7 @@ __STATIC_INLINE bool Cy_SAR_IsChannelDifferential(const SAR_Type *base, uint32_t
 *
 * \funcusage
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_VSSA_VMINUS_SWITCH
+* \snippet sar/snippet/main.c SNIPPET_SAR_VSSA_VMINUS_SWITCH
 *
 *******************************************************************************/
 __STATIC_INLINE void Cy_SAR_SetVssaVminusSwitch(SAR_Type *base, cy_en_sar_switch_state_t state)
@@ -2106,7 +2133,7 @@ __STATIC_INLINE void Cy_SAR_SetVssaVminusSwitch(SAR_Type *base, cy_en_sar_switch
 *
 * \funcusage
 *
-* \snippet sar_sut_01.cydsn/main_cm0p.c SNIPPET_SAR_VSSA_SARSEQ_CTRL
+* \snippet sar/snippet/main.c SNIPPET_SAR_VSSA_SARSEQ_CTRL
 *
 *******************************************************************************/
 __STATIC_INLINE void Cy_SAR_SetVssaSarSeqCtrl(SAR_Type *base, cy_en_sar_switch_sar_seq_ctrl_t ctrl)
@@ -2128,4 +2155,3 @@ __STATIC_INLINE void Cy_SAR_SetVssaSarSeqCtrl(SAR_Type *base, cy_en_sar_switch_s
 /** \} group_sar */
 
 /* [] END OF FILE */
-

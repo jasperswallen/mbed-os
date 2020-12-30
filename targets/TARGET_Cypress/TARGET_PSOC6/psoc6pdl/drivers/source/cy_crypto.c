@@ -1,12 +1,12 @@
 /***************************************************************************//**
 * \file cy_crypto.c
-* \version 2.30
+* \version 2.30.4
 *
 * \brief
 *  Provides API implementation of the Cypress PDL Crypto driver.
 *
 ********************************************************************************
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,18 +24,17 @@
 
 
 #include "cy_crypto.h"
-#include "cy_crypto_common.h"
-#include "cy_ipc_drv.h"
-#include "cy_sysint.h"
-#include "cy_syslib.h"
-#include <string.h>
 
 #if defined(CY_IP_MXCRYPTO)
-
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
+
+#include "cy_ipc_drv.h"
+#include "cy_sysint.h"
+#include "cy_syslib.h"
+#include <string.h>
 
 /*
  * The global variable to store a pointer to the customer's defined context.

@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_crypto_core_aes_v1.h
-* \version 2.30
+* \version 2.30.4
 *
 * \brief
 *  This file provides constant and parameters for the API for the AES method
 *  in the Crypto driver.
 *
 ********************************************************************************
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,9 +31,11 @@
 
 #if defined(CY_IP_MXCRYPTO)
 
-#if (CPUSS_CRYPTO_AES == 1)
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
-#include "cy_syslib.h"
+#if (CPUSS_CRYPTO_AES == 1)
 
 void Cy_Crypto_Core_V1_Aes_ProcessBlock(CRYPTO_Type *base,
                             cy_stc_crypto_aes_state_t const *aesState,
@@ -89,6 +91,10 @@ cy_en_crypto_status_t Cy_Crypto_Core_V1_Aes_Ctr(CRYPTO_Type *base,
 
 
 #endif /* #if (CPUSS_CRYPTO_AES == 1) */
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* CY_IP_MXCRYPTO */
 

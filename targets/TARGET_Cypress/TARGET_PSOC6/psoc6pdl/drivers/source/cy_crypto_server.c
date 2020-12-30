@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_crypto_server.c
-* \version 2.30
+* \version 2.30.4
 *
 * \brief
 *  This file provides the source code to the API for Crypto Server
 *  in the Crypto driver.
 *
 ********************************************************************************
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,12 +24,14 @@
 *******************************************************************************/
 
 
-#include "cy_device_headers.h"
-#include "cy_ipc_drv.h"
-#include "cy_sysint.h"
-#include "cy_syslib.h"
-#include "cy_crypto_common.h"
 #include "cy_crypto_server.h"
+
+#if defined(CY_IP_MXCRYPTO)
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "cy_crypto_core_aes.h"
 #include "cy_crypto_core_sha.h"
 #include "cy_crypto_core_hmac.h"
@@ -42,10 +44,11 @@
 #include "cy_crypto_core_des.h"
 #include "cy_crypto_core_hw.h"
 #include "cy_crypto_core_ecc.h"
+#include "cy_ipc_drv.h"
+#include "cy_sysint.h"
+#include "cy_syslib.h"
 #include <stdbool.h>
 #include <string.h>
-
-#if defined(CY_IP_MXCRYPTO)
 
 /* The pointer to the CRYPTO instance. */
 #define CY_CRYPTO_BASE           ((CRYPTO_Type *)cy_device->cryptoBase)
@@ -817,6 +820,10 @@ static cy_en_crypto_status_t Cy_Crypto_Core_CheckHwForErrors(cy_stc_crypto_conte
 
     return (tmpResult);
 }
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* CY_IP_MXCRYPTO */
 

@@ -34,8 +34,8 @@ const uint16_t SMS_MAX_8BIT_CONCATENATED_SINGLE_SMS_SIZE = 134;
 const uint16_t SMS_MAX_GSM7_CONCATENATED_SINGLE_SMS_SIZE = 153;
 
 
-AT_CellularSMS::AT_CellularSMS(ATHandler &at) : AT_CellularBase(at), _cb(0), _mode(CellularSMSMmodeText),
-    _use_8bit_encoding(false), _sim_wait_time(0), _sms_message_ref_number(1), _sms_info(NULL)
+AT_CellularSMS::AT_CellularSMS(ATHandler &at, AT_CellularDevice &device) : _cb(0), _mode(CellularSMSMmodeText),
+    _use_8bit_encoding(false), _sim_wait_time(0), _sms_message_ref_number(1), _sms_info(NULL), _at(at), _device(device)
 {
 }
 
@@ -71,7 +71,8 @@ nsapi_error_t AT_CellularSMS::set_csdh(int show_header)
     return NSAPI_ERROR_OK;
 }
 
-nsapi_error_t AT_CellularSMS::initialize(CellularSMSMmode mode)
+nsapi_error_t AT_CellularSMS::initialize(CellularSMSMmode mode,
+                                         CellularSMSEncoding encoding)
 {
     return NSAPI_ERROR_OK;
 }
@@ -187,4 +188,3 @@ bool AT_CellularSMS::create_time(const char *time_string, time_t *time)
 {
     return 0;
 }
-

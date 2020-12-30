@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_efuse.c
-* \version 1.10
+* \version 1.10.3
 *
 * \brief
 * Provides API implementation of the eFuse driver.
 *
 ********************************************************************************
 * \copyright
-* Copyright 2017-2019 Cypress Semiconductor Corporation
+* Copyright 2017-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,6 +25,8 @@
 
 #include "cy_efuse.h"
 #include "cy_ipc_drv.h"
+
+#ifdef CY_IP_MXEFUSE
 
 /** \cond INTERNAL */
 #define CY_EFUSE_OPCODE_SUCCESS             (0xA0000000UL)    /**< The command completed with no errors */
@@ -60,33 +62,33 @@ static cy_en_efuse_status_t ProcessOpcode(void);
 * - 8 is a number of fuse bits in the byte.
 *
 * The EFUSE_EFUSE_NR macro is defined in the series-specific header file, e.g
-* \e \<PDL_DIR\>/devices/psoc6/include/psoc6_01_config.\e h
-* 
-* \param bitVal 
+* \e \<PDL_DIR\>/devices/include/psoc6_01_config.\e h
+*
+* \param bitVal
 * The pointer to the location to store the bit value.
 *
-* \return 
+* \return
 * \ref cy_en_efuse_status_t
 *
 * \funcusage
 * The example below shows how to read device life-cycle register bits in
 * PSoC 6:
-* \snippet eFuse_v1_0_sut_00.cydsn/main_cm0p.c SNIPPET_EFUSE_READ_BIT
+* \snippet efuse/snippet/main.c SNIPPET_EFUSE_READ_BIT
 *
 *******************************************************************************/
 cy_en_efuse_status_t Cy_EFUSE_GetEfuseBit(uint32_t bitNum, bool *bitVal)
 {
     cy_en_efuse_status_t result = CY_EFUSE_BAD_PARAM;
-    
+
     if (bitVal != NULL)
     {
         uint32_t offset = bitNum / CY_EFUSE_BITS_PER_BYTE;
         uint8_t byteVal;
         *bitVal = false;
-        
+
         /* Read the eFuse byte */
         result = Cy_EFUSE_GetEfuseByte(offset, &byteVal);
-        
+
         if (result == CY_EFUSE_SUCCESS)
         {
             uint32_t bitPos = bitNum % CY_EFUSE_BITS_PER_BYTE;
@@ -117,37 +119,37 @@ cy_en_efuse_status_t Cy_EFUSE_GetEfuseBit(uint32_t bitNum, bool *bitVal)
 * - 32 is a number of fuse bytes in one efuse macro.
 *
 * The EFUSE_EFUSE_NR macro is defined in the series-specific header file, e.g
-* \e \<PDL_DIR\>/devices/psoc6/include/psoc6_01_config.\e h
+* \e \<PDL_DIR\>/devices/include/psoc6_01_config.\e h
 *
 * \param byteVal
 * The pointer to the location to store eFuse data.
 *
-* \return 
+* \return
 * \ref cy_en_efuse_status_t
 *
 * \funcusage
 * The example below shows how to read a device life-cycle stage register in
 * PSoC 6:
-* \snippet eFuse_v1_0_sut_00.cydsn/main_cm0p.c SNIPPET_EFUSE_READ_LIFECYCLE
+* \snippet efuse/snippet/main.c SNIPPET_EFUSE_READ_LIFECYCLE
 *
 *******************************************************************************/
 cy_en_efuse_status_t Cy_EFUSE_GetEfuseByte(uint32_t offset, uint8_t *byteVal)
 {
     cy_en_efuse_status_t result = CY_EFUSE_BAD_PARAM;
-    
+
     if (byteVal != NULL)
     {
         /* Prepare opcode before calling the SROM API */
         opcode = CY_EFUSE_OPCODE_READ_FUSE_BYTE | (offset << CY_EFUSE_OPCODE_OFFSET_Pos);
-        
+
         /* Send the IPC message */
         if (Cy_IPC_Drv_SendMsgPtr(CY_EFUSE_IPC_STRUCT, CY_EFUSE_IPC_NOTIFY_STRUCT0, (void*)&opcode) == CY_IPC_DRV_SUCCESS)
-        {           
+        {
             /* Wait until the IPC structure is locked */
             while(Cy_IPC_Drv_IsLockAcquired(CY_EFUSE_IPC_STRUCT) != false)
             {
             }
-            
+
             /* The result of the SROM API call is returned to the opcode variable */
             if ((opcode & CY_EFUSE_OPCODE_STS_Msk) == CY_EFUSE_OPCODE_SUCCESS)
             {
@@ -197,7 +199,7 @@ uint32_t Cy_EFUSE_GetExternalStatus(void)
 * Function Name: ProcessOpcode
 ****************************************************************************//**
 *
-* Converts System Call returns to the eFuse driver return defines. If 
+* Converts System Call returns to the eFuse driver return defines. If
 * an unknown error was returned, the error code can be accessed via the
 * Cy_EFUSE_GetExternalStatus() function.
 *
@@ -233,5 +235,6 @@ static cy_en_efuse_status_t ProcessOpcode(void)
     return (result);
 }
 
+#endif /* #ifdef CY_IP_MXEFUSE */
 
 /* [] END OF FILE */

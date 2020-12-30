@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_crypto_core_aes_v1.c
-* \version 2.30
+* \version 2.30.4
 *
 * \brief
 *  This file provides the source code fro the API for the AES method
 *  in the Crypto driver.
 *
 ********************************************************************************
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,14 +26,18 @@
 
 #include "cy_crypto_core_aes_v1.h"
 
+#if defined(CY_IP_MXCRYPTO)
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+#if (CPUSS_CRYPTO_AES == 1)
+
 #include "cy_crypto_core_hw_v1.h"
 #include "cy_crypto_core_mem_v1.h"
 #include "cy_syslib.h"
 #include <string.h>
-
-#if defined(CY_IP_MXCRYPTO)
-
-#if (CPUSS_CRYPTO_AES == 1)
 
 static void Cy_Crypto_Core_V1_Aes_InvKey(CRYPTO_Type *base, cy_stc_crypto_aes_state_t const *aesState);
 
@@ -200,7 +204,7 @@ cy_en_crypto_status_t Cy_Crypto_Core_V1_Aes_Init(CRYPTO_Type *base,
                                                  uint8_t const *key,
                                                  cy_en_crypto_aes_key_length_t keyLength,
                                                  cy_stc_crypto_aes_state_t *aesState,
-												 cy_stc_crypto_aes_buffers_t *aesBuffers)
+                                                 cy_stc_crypto_aes_buffers_t *aesBuffers)
 {
     uint16_t keySize = CY_CRYPTO_AES_128_KEY_SIZE + ((uint16_t)keyLength * 8u);
 
@@ -537,6 +541,8 @@ cy_en_crypto_status_t Cy_Crypto_Core_V1_Aes_Ctr(CRYPTO_Type *base,
     uint32_t *dstBuff      = (uint32_t*)(&aesBuffers->block1);
     uint32_t *streamBuff   = (uint32_t*)(&aesBuffers->block2);
 
+    (void)streamBlock; /* Suppress warning */
+
     Cy_Crypto_Core_V1_MemCpy(base, blockCounter, ivPtr, CY_CRYPTO_AES_BLOCK_SIZE);
 
     counter = CY_SWAP_ENDIAN64(*(uint64_t*)(blockCounter + CY_CRYPTO_AES_CTR_CNT_POS));
@@ -573,6 +579,10 @@ cy_en_crypto_status_t Cy_Crypto_Core_V1_Aes_Ctr(CRYPTO_Type *base,
 }
 
 #endif /* #if (CPUSS_CRYPTO_AES == 1) */
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* CY_IP_MXCRYPTO */
 

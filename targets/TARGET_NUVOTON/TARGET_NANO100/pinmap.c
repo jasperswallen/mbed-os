@@ -17,6 +17,7 @@
 #include "mbed_assert.h"
 #include "pinmap.h"
 #include "PortNames.h"
+#include "PeripheralNames.h"
 #include "mbed_error.h"
 
 /**
@@ -29,7 +30,7 @@ void pin_function(PinName pin, int data)
     uint32_t port_index = NU_PINNAME_TO_PORT(pin);
     __IO uint32_t *Px_x_MFP = ((__IO uint32_t *) &SYS->PA_L_MFP) + port_index * 2 + (pin_index / 8);
     uint32_t MFP_Msk = NU_MFP_MSK(pin_index);
-    
+
     // E.g.: SYS->PA_L_MFP  = (SYS->PA_L_MFP & (~SYS_PA_L_MFP_PA0_MFP_Msk) ) | SYS_PA_L_MFP_PA0_MFP_SC0_CD  ;
     *Px_x_MFP  = (*Px_x_MFP & (~MFP_Msk)) | data;
 }
@@ -43,7 +44,7 @@ void pin_mode(PinName pin, PinMode mode)
     uint32_t pin_index = NU_PINNAME_TO_PIN(pin);
     uint32_t port_index = NU_PINNAME_TO_PORT(pin);
     GPIO_T *gpio_base = NU_PORT_BASE(port_index);
-    
+
     uint32_t mode_intern;
 
     switch (mode) {
@@ -58,7 +59,7 @@ void pin_mode(PinName pin, PinMode mode)
         case OpenDrain:
             mode_intern = GPIO_PMD_OPEN_DRAIN;
             break;
-            
+
         default:
             /* H/W doesn't support separate configuration for input pull mode/direction.
              * We expect upper layer would have translated input pull mode/direction

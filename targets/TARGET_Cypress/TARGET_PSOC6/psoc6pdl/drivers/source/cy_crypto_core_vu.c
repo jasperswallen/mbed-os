@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_crypto_core_vu.c
-* \version 2.30
+* \version 2.30.4
 *
 * \brief
 *  This file provides the source code to the API for the Vector Unit helpers
 *  in the Crypto driver.
 *
 ********************************************************************************
-* Copyright 2016-2018 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,6 +27,10 @@
 #include "cy_crypto_core_vu.h"
 
 #if defined(CY_IP_MXCRYPTO)
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 #if (CPUSS_CRYPTO_VU == 1)
 
@@ -209,11 +213,13 @@ void Cy_Crypto_Core_VU_RegInvertEndianness(CRYPTO_Type *base, uint32_t srcReg)
     Cy_Crypto_Core_InvertEndianness(dataAddr, byteSize);
 }
 
-
 #endif /* #if (CPUSS_CRYPTO_VU == 1) */
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* CY_IP_MXCRYPTO */
 
 
 /* [] END OF FILE */
-

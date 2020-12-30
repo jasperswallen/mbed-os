@@ -1,5 +1,6 @@
 /* mbed Microcontroller Library
  * Copyright (c) 2006-2018 ARM Limited
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +16,7 @@
  */
 #include <stddef.h>
 #include "us_ticker_api.h"
+#include "us_ticker_defines.h"
 #include "fsl_ctimer.h"
 #include "PeripheralNames.h"
 
@@ -72,8 +74,9 @@ void us_ticker_init(void) {
  *
  * @return The current timer's counter value in ticks
  */
-uint32_t us_ticker_read(void) {
-    return CTIMER->TC;
+uint32_t (us_ticker_read)()
+{
+    return us_ticker_read();
 }
 
 /** Set interrupt for specified timestamp

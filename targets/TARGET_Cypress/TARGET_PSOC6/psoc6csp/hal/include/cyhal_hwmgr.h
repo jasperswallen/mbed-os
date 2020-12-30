@@ -8,7 +8,7 @@
 *
 ********************************************************************************
 * \copyright
-* Copyright 2018-2019 Cypress Semiconductor Corporation
+* Copyright 2018-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,12 +28,29 @@
 * \addtogroup group_hal_hwmgr HWMGR (Hardware Manager)
 * \ingroup group_hal
 * \{
-* High level interface for interacting with the Cypress Hardware Manager.
+* High level interface to the Hardware Manager.
 *
-* \defgroup group_hal_hwmgr_macros Macros
-* \defgroup group_hal_hwmgr_functions Functions
-* \defgroup group_hal_hwmgr_data_structures Data Structures
-* \defgroup group_hal_hwmgr_enums Enumerated Types
+* \section section_hwmgr_features Features
+* * Allows HAL drivers or application firmware to mark specific hardware resources
+*   as reserved. When this is done, other reservation requests for the same resource will be denied.
+* * For resources which are interchangeable such as clock dividers, provides allocation
+*   and reservation of an available instance.
+*
+* \section section_hwmgr_quickstart Quick Start
+* * \ref cyhal_hwmgr_init is used to initialize the hardware manager to keep
+* track of resources being used.
+* * \ref cyhal_hwmgr_reserve reserves a specified resource if available.
+* * \ref cyhal_hwmgr_free frees the specified resource.
+* * \ref cyhal_hwmgr_allocate can be used to allocate a free block of specified
+* resource, if available.
+*
+*
+* \section section_hwmgr_snippets Code snippets
+* \subsection subsection_hwmgr_snippet_1 Snippet 1: Freeing a block used by PDL or configurators
+* The following snippet shows how a specific resource used directly in PDL or the
+* configurators can be freed so that it can be used by HAL.<br>
+*
+* \snippet hw_mgr.c snippet_cyhal_hwmgr_reserve
 */
 
 #pragma once
@@ -47,155 +64,81 @@
 extern "C" {
 #endif
 
-/**
-* \addtogroup group_hal_hwmgr_enums
-* \{
-*/
-
-/** Enum to in indicate which module an errors occurred in. */
-enum cyhal_rslt_module_chip
-{
-    CYHAL_RSLT_MODULE_CHIP_HWMGR = CY_RSLT_MODULE_ABSTRACTION_HAL_BASE, //!< An error occurred in hardware management module
-    CYHAL_RSLT_MODULE_ADC,                                              //!< An error occurred in ADC module
-    CYHAL_RSLT_MODULE_COMP,                                             //!< An error occurred in comparator module
-    CYHAL_RSLT_MODULE_CRC,                                              //!< An error occurred in crypto CRC module
-    CYHAL_RSLT_MODULE_DAC,                                              //!< An error occurred in DAC module
-    CYHAL_RSLT_MODULE_DMA,                                              //!< An error occurred in DMA module
-    CYHAL_RSLT_MODULE_FLASH,                                            //!< An error occurred in flash module
-    CYHAL_RSLT_MODULE_GPIO,                                             //!< An error occurred in GPIO module
-    CYHAL_RSLT_MODULE_I2C,                                              //!< An error occurred in I2C module
-    CYHAL_RSLT_MODULE_I2S,                                              //!< An error occurred in I2S module
-    CYHAL_RSLT_MODULE_INTERCONNECT,                                     //!< An error occurred in Interconnct module
-    CYHAL_RSLT_MODULE_OPAMP,                                            //!< An error occurred in OpAmp module
-    CYHAL_RSLT_MODULE_PDMPCM,                                           //!< An error occurred in PDM/PCM module
-    CYHAL_RSLT_MODULE_PWM,                                              //!< An error occurred in PWM module
-    CYHAL_RSLT_MODULE_QSPI,                                             //!< An error occurred in QSPI module
-    CYHAL_RSLT_MODULE_RTC,                                              //!< An error occurred in RTC module
-    CYHAL_RSLT_MODULE_SDHC,                                             //!< An error occurred in SDHC module
-    CYHAL_RSLT_MODULE_SDIO,                                             //!< An error occurred in SDIO module
-    CYHAL_RSLT_MODULE_SPI,                                              //!< An error occurred in SPI module
-    CYHAL_RSLT_MODULE_SYSTEM,                                           //!< An error occurred in System module
-    CYHAL_RSLT_MODULE_TIMER,                                            //!< An error occurred in Timer module
-    CYHAL_RSLT_MODULE_TRNG,                                             //!< An error occurred in RNG module
-    CYHAL_RSLT_MODULE_UART,                                             //!< An error occurred in UART module
-    CYHAL_RSLT_MODULE_USB,                                              //!< An error occurred in USB module
-    CYHAL_RSLT_MODULE_WDT,                                              //!< An error occurred in WDT module
-};
-
-/** \} group_hal_hwmgr_enums */
-
-
-/**
-* \addtogroup group_hal_hwmgr_macros
-* \{
-*/
+/** \addtogroup group_hal_results
+ *  \{ *//**
+ *  \{ @name Hardware Manager Results
+ */
 
 /** The requested resource type is invalid */
-#define CYHAL_HWMGR_RSLT_ERR_INVALID (CY_RSLT_CREATE(CY_RSLT_TYPE_ERROR, CYHAL_RSLT_MODULE_CHIP_HWMGR, 0))
+#define CYHAL_HWMGR_RSLT_ERR_INVALID                    \
+    (CYHAL_RSLT_CREATE(CY_RSLT_TYPE_ERROR, CYHAL_RSLT_MODULE_HWMGR, 0))
 /** The requested resource is already in use */
-#define CYHAL_HWMGR_RSLT_ERR_INUSE (CY_RSLT_CREATE(CY_RSLT_TYPE_ERROR, CYHAL_RSLT_MODULE_CHIP_HWMGR, 1))
+#define CYHAL_HWMGR_RSLT_ERR_INUSE                      \
+    (CYHAL_RSLT_CREATE(CY_RSLT_TYPE_ERROR, CYHAL_RSLT_MODULE_HWMGR, 1))
 /** No resources of the requested type are available */
-#define CYHAL_HWMGR_RSLT_ERR_NONE_FREE (CY_RSLT_CREATE(CY_RSLT_TYPE_ERROR, CYHAL_RSLT_MODULE_CHIP_HWMGR, 2))
-
+#define CYHAL_HWMGR_RSLT_ERR_NONE_FREE                  \
+    (CYHAL_RSLT_CREATE(CY_RSLT_TYPE_ERROR, CYHAL_RSLT_MODULE_HWMGR, 2))
 /** Attempt to free a resource that was not used */
-#define CYHAL_HWMGR_RSLT_WARN_UNUSED (CY_RSLT_CREATE(CY_RSLT_TYPE_WARNING, CYHAL_RSLT_MODULE_CHIP_HWMGR, 50))
-
-/** \} group_hal_hwmgr_macros */
-
+#define CYHAL_HWMGR_RSLT_WARN_UNUSED                    \
+    (CYHAL_RSLT_CREATE(CY_RSLT_TYPE_WARNING, CYHAL_RSLT_MODULE_HWMGR, 50))
 
 /**
-* \addtogroup group_hal_hwmgr_functions
-* \{
-*/
+ * \} \}
+ */
+
+
+
 
 /** Initializes the hardware manager to keep track of what resources are being used.
  *
  * @return The status of the init request
+ *
  */
-cy_rslt_t cyhal_hwmgr_init();
+cy_rslt_t cyhal_hwmgr_init(void);
 
-/** Reserve the specified resource.
+/** Reserve the specified resource. The exact block number and
+ * channel number must be specified. If this is not know, use
+ * \ref cyhal_hwmgr_allocate.
+ *
+ * \note This function is called by the init function of hardware blocks.
+ * Calling this again for the same block will result in error since the hardware
+ * block is already marked as consumed.
  *
  * @param[in] obj  The resource object that should be reserved
  * @return The status of the reserve request
+ *
+ * See \ref subsection_hwmgr_snippet_1
  */
 cy_rslt_t cyhal_hwmgr_reserve(const cyhal_resource_inst_t* obj);
 
-/** Free the specified resource to allow it to be used by something else.
+/** Free the specified resource to allow it to be reused.
  *
  * @param[in,out] obj The resource object to free
+ *
+ * See \ref subsection_hwmgr_snippet_1
  */
 void cyhal_hwmgr_free(const cyhal_resource_inst_t* obj);
 
-/** Reserve the specified resource.
- *
- * @param[in]  type The type of resource that should be reserved
- * @param[out] obj  The resource object that was be reserved
- * @return The status of the allocate request
- */
-cy_rslt_t cyhal_hwmgr_allocate(cyhal_resource_t type, cyhal_resource_inst_t* obj);
-
 /** Allocates a free block of the specified type if available
+ * This function is used when the exact block number and channel number of the
+ * resource is not known. This function loops through all available resource
+ * of the specified type and assigns the resource if available.
+ * This function internally calls \ref cyhal_hwmgr_reserve function and hence,
+ * it should not be called again.
  *
- * @param[in]  type The type of resource to allocate
- * @param[out] obj  The resource object to free
- * @return The status of the allocate request
+ * @param[in]  type The type of resource to allocate.
+ * @param[out] obj  The resource object.
+ * @return The status of the allocate request.
+ *
  */
 cy_rslt_t cyhal_hwmgr_allocate(cyhal_resource_t type, cyhal_resource_inst_t* obj);
-
-/** Allocate (pick and reserve) an DMA resource and provide a reference to it.
- *
- * @param[out] obj The resource object that was allocated
- * @return The status of the reserve request
- */
-cy_rslt_t cyhal_hwmgr_allocate_dma(cyhal_resource_inst_t* obj);
-
-/** Allocate (pick and reserve) an Clock Divider resource and provide a reference to it.
- *
- * @param[out] obj           The resource object that was allocated
- * @param[in]  div           The type of divider to allocate
- * @param[in]  accept_larger Whether a larger type can be provided if there are none of the requested size available
- * @return The status of the reserve request
- */
-cy_rslt_t cyhal_hwmgr_allocate_clock(cyhal_clock_divider_t* obj, cyhal_clock_divider_types_t div, bool accept_larger);
-
-/** Free the specified Clock Divider resource and allow it be used by something else.
- *
- * @param[in] obj           The resource object that was allocated
- */
-void cyhal_hwmgr_free_clock(cyhal_clock_divider_t* obj);
-
-/** Marks the specified resource as having already been configured (eg: it doesn't need to be configured again).
- *
- * @param[in]  type    The type of hardware block to reserve
- * @param[in]  block   The block number of to reserve
- * @param[in]  channel The block's channel instance number to reserve (0 if there are no channels in the block)
- * @return The status of the set request
- */
-cy_rslt_t cyhal_hwmgr_set_configured(cyhal_resource_t type, uint8_t block, uint8_t channel);
-
-/** Marks the specified resource as not having already been configured (eg: it still needs to be configured before being used).
- *
- * @param[in]  type    The type of hardware block to reserve
- * @param[in]  block   The block number of to reserve
- * @param[in]  channel The block's channel instance number to reserve (0 if there are no channels in the block)
- * @return The status of the set request
- */
-cy_rslt_t cyhal_hwmgr_set_unconfigured(cyhal_resource_t type, uint8_t block, uint8_t channel);
-
-/** Checks to see if the specified resource has already been configured (eg: it doesn't need to be configured again).
- *
- * @param[in]  type    The type of hardware block to reserve
- * @param[in]  block   The block number of to reserve
- * @param[in]  channel The block's channel instance number to reserve (0 if there are no channels in the block)
- * @return Whether the block is currently configured
- */
-bool cyhal_hwmgr_is_configured(cyhal_resource_t type, uint8_t block, uint8_t channel);
-
-/** \} group_hal_hwmgr_functions */
 
 #if defined(__cplusplus)
 }
 #endif
+
+#ifdef CYHAL_HWMGR_IMPL_HEADER
+#include CYHAL_HWMGR_IMPL_HEADER
+#endif /* CYHAL_HWMGR_IMPL_HEADER */
 
 /** \} group_hal_hwmgr */

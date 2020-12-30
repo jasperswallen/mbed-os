@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "equeue.h"
+#include "events/equeue.h"
 #include <stdlib.h>
 
 #include "equeue_stub.h"
@@ -92,9 +92,9 @@ int equeue_post(equeue_t *queue, void (*cb)(void *), void *event)
     return 0;
 }
 
-void equeue_cancel(equeue_t *queue, int id)
+bool equeue_cancel(equeue_t *queue, int id)
 {
-
+    return true;
 }
 
 void equeue_background(equeue_t *queue,

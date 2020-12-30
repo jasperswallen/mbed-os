@@ -21,13 +21,15 @@ UNIT TEST BUILD & RUN
 import os
 import logging
 import sys
+import psutil
 from shutil import copy
 
 from .utils import execute_program
 from .get_tools import get_make_tool, \
                        get_cmake_tool, \
                        get_cxx_tool, \
-                       get_c_tool
+                       get_c_tool, \
+                       get_valgrind_tool
 from .settings import DEFAULT_CMAKE_GENERATORS
 
 class UnitTestTool(object):
@@ -58,7 +60,8 @@ class UnitTestTool(object):
                          path_to_src=None,
                          generator=None,
                          coverage_output_type=None,
-                         debug=False):
+                         debug=False,
+                         valgrind=False):
         """
         Create Makefiles and prepare targets with CMake.
 
@@ -93,6 +96,17 @@ class UnitTestTool(object):
         if coverage_output_type:
             args.append("-DCOVERAGE:STRING=%s" % coverage_output_type)
 
+        if valgrind:
+            valgrind = get_valgrind_tool()
+            if valgrind is None:
+                logging.error(
+                    "No Valgrind found in Path. Install all the required tools.\n")
+                sys.exit(1)
+            args.append("-DVALGRIND=1")
+            args.append("-DMEMORYCHECK_COMMAND_OPTIONS=\"--track-origins=yes\" \"--leak-check=full\" \"--show-reachable=yes\" \"--error-exitcode=1\"")
+        else:
+            args.append("-DVALGRIND=0")
+
         if path_to_src is not None:
             args.append(path_to_src)
 
@@ -106,6 +120,10 @@ class UnitTestTool(object):
 
         args = [self.make_program]
 
+        # Speed up compilation by running on more than one core
+        count = psutil.cpu_count()
+        args.append("-j{}".format(count+1))
+
         if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
             args.append("VERBOSE=1")
 
@@ -113,7 +131,7 @@ class UnitTestTool(object):
                         "Building unit tests failed.",
                         "Unit tests built successfully.")
 
-    def run_tests(self, filter_regex=None):
+    def run_tests(self, filter_regex=None, valgrind=False):
         """
         Run unit tests.
 
@@ -122,11 +140,16 @@ class UnitTestTool(object):
         """
 
         args = [self.make_program, "test"]
-
-        if filter_regex:
-            args.append("ARGS=-R %s -V -D ExperimentalTest" % filter_regex)
+        if valgrind:
+            if filter_regex:
+                args.append("ARGS=-R %s -V -D ExperimentalMemCheck" % filter_regex)
+            else:
+                args.append("ARGS=-V -D ExperimentalMemCheck")
         else:
-            args.append("ARGS=-V -D ExperimentalTest")
+            if filter_regex:
+                args.append("ARGS=-R %s -V -D ExperimentalTest" % filter_regex)
+            else:
+                args.append("ARGS=-V -D ExperimentalTest")
 
         if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
             args.append("VERBOSE=1")

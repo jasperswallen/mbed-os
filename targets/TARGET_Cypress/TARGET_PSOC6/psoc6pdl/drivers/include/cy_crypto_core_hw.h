@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_crypto_core_hw.h
-* \version 2.30
+* \version 2.30.4
 *
 * \brief
 *  This file provides the headers to the API for the utils
 *  in the Crypto driver.
 *
 ********************************************************************************
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,12 +27,14 @@
 #if !defined(CY_CRYPTO_CORE_HW_H)
 #define CY_CRYPTO_CORE_HW_H
 
-#include "cy_device_headers.h"
 #include "cy_crypto_common.h"
 
 #if defined(CY_IP_MXCRYPTO)
 
-#include "cy_device.h"
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "ip/cyip_crypto.h"
 #include "ip/cyip_crypto_v2.h"
 
@@ -285,6 +287,7 @@ __STATIC_INLINE bool Cy_Crypto_Core_IsEnabled(CRYPTO_Type *base)
 *******************************************************************************/
 __STATIC_INLINE uint8_t Cy_Crypto_Core_GetFIFODepth(CRYPTO_Type *base)
 {
+    (void)base; /* Suppress warning */
     return (CY_CRYPTO_INSTR_FIFODEPTH);
 }
 
@@ -516,9 +519,11 @@ __STATIC_INLINE uint32_t * Cy_Crypto_Core_GetVuMemoryAddress(CRYPTO_Type *base)
     return (cy_cryptoIP != NULL) ? (uint32_t *)REG_CRYPTO_VU_CTL1(base) : (uint32_t *)NULL;
 }
 
-
 /** \} group_crypto_lld_hw_functions */
 
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* CY_IP_MXCRYPTO */
 
@@ -526,4 +531,3 @@ __STATIC_INLINE uint32_t * Cy_Crypto_Core_GetVuMemoryAddress(CRYPTO_Type *base)
 
 
 /* [] END OF FILE */
-

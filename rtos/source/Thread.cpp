@@ -1,5 +1,6 @@
 /* mbed Microcontroller Library
  * Copyright (c) 2006-2012 ARM Limited
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#include <string.h>
 #include "rtos/Thread.h"
 #include "rtos/ThisThread.h"
 #include "rtos_idle.h"
@@ -29,12 +31,12 @@
 #if MBED_CONF_RTOS_PRESENT
 
 #define ALIGN_UP(pos, align) ((pos) % (align) ? (pos) +  ((align) - (pos) % (align)) : (pos))
-MBED_STATIC_ASSERT(ALIGN_UP(0, 8) == 0, "ALIGN_UP macro error");
-MBED_STATIC_ASSERT(ALIGN_UP(1, 8) == 8, "ALIGN_UP macro error");
+static_assert(ALIGN_UP(0, 8) == 0, "ALIGN_UP macro error");
+static_assert(ALIGN_UP(1, 8) == 8, "ALIGN_UP macro error");
 
 #define ALIGN_DOWN(pos, align) ((pos) - ((pos) % (align)))
-MBED_STATIC_ASSERT(ALIGN_DOWN(7, 8) == 0, "ALIGN_DOWN macro error");
-MBED_STATIC_ASSERT(ALIGN_DOWN(8, 8) == 8, "ALIGN_DOWN macro error");
+static_assert(ALIGN_DOWN(7, 8) == 0, "ALIGN_DOWN macro error");
+static_assert(ALIGN_DOWN(8, 8) == 8, "ALIGN_DOWN macro error");
 
 namespace rtos {
 
@@ -51,7 +53,8 @@ void Thread::constructor(uint32_t tz_module, osPriority priority,
     const uint32_t offset = aligned_mem - unaligned_mem;
     const uint32_t aligned_size = ALIGN_DOWN(stack_size - offset, 8);
 
-    _tid = 0;
+    memset(&_obj_mem, 0, sizeof(_obj_mem));
+    _tid = nullptr;
     _dynamic_stack = (stack_mem == nullptr);
     _finished = false;
     memset(&_attr, 0, sizeof(_attr));
@@ -66,25 +69,6 @@ void Thread::constructor(osPriority priority,
                          uint32_t stack_size, unsigned char *stack_mem, const char *name)
 {
     constructor(MBED_TZ_DEFAULT_ACCESS, priority, stack_size, stack_mem, name);
-}
-
-void Thread::constructor(mbed::Callback<void()> task,
-                         osPriority priority, uint32_t stack_size, unsigned char *stack_mem, const char *name)
-{
-    constructor(MBED_TZ_DEFAULT_ACCESS, priority, stack_size, stack_mem, name);
-
-    switch (start(task)) {
-        case osErrorResource:
-            MBED_ERROR1(MBED_MAKE_ERROR(MBED_MODULE_PLATFORM, MBED_ERROR_CODE_OUT_OF_RESOURCES), "OS ran out of threads!\n", task);
-            break;
-        case osErrorParameter:
-            MBED_ERROR1(MBED_MAKE_ERROR(MBED_MODULE_PLATFORM, MBED_ERROR_CODE_ALREADY_IN_USE), "Thread already running!\n", task);
-            break;
-        case osErrorNoMemory:
-            MBED_ERROR1(MBED_MAKE_ERROR(MBED_MODULE_PLATFORM, MBED_ERROR_CODE_OUT_OF_MEMORY), "Error allocating the stack memory\n", task);
-        default:
-            break;
-    }
 }
 
 osStatus Thread::start(mbed::Callback<void()> task)
@@ -106,14 +90,14 @@ osStatus Thread::start(mbed::Callback<void()> task)
         ((uint32_t *)_attr.stack_mem)[i] = osRtxStackMagicWord;
     }
 
-    memset(&_obj_mem, 0, sizeof(_obj_mem));
     _attr.cb_size = sizeof(_obj_mem);
     _attr.cb_mem = &_obj_mem;
     _task = task;
     _tid = osThreadNew(Thread::_thunk, this, &_attr);
     if (_tid == nullptr) {
         if (_dynamic_stack) {
-            delete[] _attr.stack_mem;
+            // Cast before deallocation as delete[] does not accept void*
+            delete[] static_cast<uint32_t *>(_attr.stack_mem);
             _attr.stack_mem = nullptr;
         }
         _mutex.unlock();
@@ -191,11 +175,6 @@ uint32_t Thread::flags_set(uint32_t flags)
     flags = osThreadFlagsSet(_tid, flags);
     MBED_ASSERT(!(flags & osFlagsError));
     return flags;
-}
-
-int32_t Thread::signal_set(int32_t flags)
-{
-    return osThreadFlagsSet(_tid, flags);
 }
 
 Thread::State Thread::get_state() const
@@ -341,83 +320,13 @@ osThreadId_t Thread::get_id() const
     return _tid;
 }
 
-int32_t Thread::signal_clr(int32_t flags)
-{
-    return osThreadFlagsClear(flags);
-}
-
-osEvent Thread::signal_wait(int32_t signals, uint32_t millisec)
-{
-    uint32_t res;
-    osEvent evt;
-    uint32_t options = osFlagsWaitAll;
-    if (signals == 0) {
-        options = osFlagsWaitAny;
-        signals = 0x7FFFFFFF;
-    }
-    res = osThreadFlagsWait(signals, options, millisec);
-    if (res & osFlagsError) {
-        switch (res) {
-            case osFlagsErrorISR:
-                evt.status = osErrorISR;
-                break;
-            case osFlagsErrorResource:
-                evt.status = osOK;
-                break;
-            case osFlagsErrorTimeout:
-                evt.status = (osStatus)osEventTimeout;
-                break;
-            case osFlagsErrorParameter:
-            default:
-                evt.status = (osStatus)osErrorValue;
-                break;
-        }
-    } else {
-        evt.status = (osStatus)osEventSignal;
-        evt.value.signals = res;
-    }
-
-    return evt;
-}
-
-osStatus Thread::wait(uint32_t millisec)
-{
-    ThisThread::sleep_for(millisec);
-    return osOK;
-}
-
-osStatus Thread::wait_until(uint64_t millisec)
-{
-    ThisThread::sleep_until(millisec);
-    return osOK;
-}
-
-osStatus Thread::yield()
-{
-    return osThreadYield();
-}
-
-osThreadId Thread::gettid()
-{
-    return osThreadGetId();
-}
-
-void Thread::attach_idle_hook(void (*fptr)(void))
-{
-    rtos_attach_idle_hook(fptr);
-}
-
-void Thread::attach_terminate_hook(void (*fptr)(osThreadId_t id))
-{
-    rtos_attach_thread_terminate_hook(fptr);
-}
-
 Thread::~Thread()
 {
     // terminate is thread safe
     terminate();
     if (_dynamic_stack) {
-        delete[] _attr.stack_mem;
+        // Cast before deallocation as delete[] does not accept void*
+        delete[] static_cast<uint32_t *>(_attr.stack_mem);
         _attr.stack_mem = nullptr;
     }
 }

@@ -2,6 +2,7 @@
  * Implementation for Posix compliant platforms
  *
  * Copyright (c) 2016-2019 ARM Limited
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +41,10 @@ unsigned equeue_tick(void)
 // Mutex operations
 int equeue_mutex_create(equeue_mutex_t *m)
 {
-    return pthread_mutex_init(m, 0);
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    return pthread_mutex_init(m, &attr);
 }
 
 void equeue_mutex_destroy(equeue_mutex_t *m)

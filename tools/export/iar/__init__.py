@@ -18,13 +18,16 @@ from multiprocessing import cpu_count
 
 
 def _supported(mcu, iar_targets):
-    if "IAR" not in mcu.supported_toolchains:
+    if not mcu.is_TFM_target:
+        if "IAR" not in mcu.supported_toolchains:
+            return False
+        if hasattr(mcu, 'device_name') and mcu.device_name in iar_targets:
+            return True
+        if mcu.name in iar_targets:
+            return True
         return False
-    if hasattr(mcu, 'device_name') and mcu.device_name in iar_targets:
-        return True
-    if mcu.name in iar_targets:
-        return True
-    return False
+    else:
+        return False
 
 
 _iar_defs = os.path.join(
@@ -121,7 +124,7 @@ class IAR(Exporter):
         template = ["--vla", "--no_static_destruction"]
         # Flag invalid if set in template
         # Optimizations are also set in template
-        invalid_flag = lambda x: x in template or re.match("-O(\d|time|n|hz?)", x)
+        invalid_flag = lambda x: x in template or re.match("-O(\d|time|n|l|hz?)", x)
         flags['c_flags'] = [flag for flag in c_flags if not invalid_flag(flag)]
 
         try:

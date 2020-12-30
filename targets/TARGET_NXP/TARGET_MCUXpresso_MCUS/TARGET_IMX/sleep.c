@@ -1,5 +1,6 @@
 /* mbed Microcontroller Library
  * Copyright (c) 2006-2013 ARM Limited
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,26 +20,23 @@
 
 extern void vPortPRE_SLEEP_PROCESSING(clock_mode_t powermode);
 extern void vPortPOST_SLEEP_PROCESSING(clock_mode_t powermode);
-extern void serial_wait_tx_complete(uint32_t uart_index);
-
+extern bool serial_check_tx_ongoing();
 
 void hal_sleep(void)
 {
-    vPortPRE_SLEEP_PROCESSING(kCLOCK_ModeWait);
-
     __DSB();
     __WFI();
     __ISB();
-
-    vPortPOST_SLEEP_PROCESSING(kCLOCK_ModeWait);
 }
 
 void hal_deepsleep(void)
 {
-    vPortPRE_SLEEP_PROCESSING(kCLOCK_ModeStop);
+    /* Check if any of the UART's is transmitting data */
+    if (serial_check_tx_ongoing()) {
+        return;
+    }
 
-    /* Wait till debug UART is done transmitting */
-    serial_wait_tx_complete(STDIO_UART);
+    vPortPRE_SLEEP_PROCESSING(kCLOCK_ModeStop);
 
     __DSB();
     __WFI();

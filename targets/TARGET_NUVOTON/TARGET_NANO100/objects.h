@@ -29,6 +29,7 @@ extern "C" {
 
 struct gpio_irq_s {
     PinName     pin;
+    uint32_t    irq_types;
     uint32_t    irq_handler;
     uint32_t    irq_id;
     struct gpio_irq_s   *next;
@@ -42,15 +43,21 @@ struct port_s {
 
 struct analogin_s {
     ADCName adc;
+    PinName pin;
 };
 
 struct dac_s {
     DACName dac;
+    PinName pin;
 };
 
 struct serial_s {
     UARTName uart;
-    
+    PinName pin_tx;
+    PinName pin_rx;
+    PinName pin_rts;
+    PinName pin_cts;
+
     uint32_t baudrate;
     uint32_t databits;
     uint32_t parity;
@@ -85,11 +92,14 @@ struct spi_s {
     int         dma_chn_id_tx;
     int         dma_chn_id_rx;
     uint32_t    event;
+    uint32_t    txrx_rmn;       // Track tx/rx frames remaining in interrupt way
     uint32_t    hdlr_async;
 };
 
 struct i2c_s {
     I2CName     i2c;
+    PinName     pin_sda;
+    PinName     pin_scl;
     int         slaveaddr_state;
     
     uint32_t    tran_ctrl;
@@ -108,6 +118,7 @@ struct i2c_s {
 
 struct pwmout_s {
     PWMName pwm;
+    PinName pin;
     uint32_t period_us;
     uint32_t pulsewidth_us;
 };

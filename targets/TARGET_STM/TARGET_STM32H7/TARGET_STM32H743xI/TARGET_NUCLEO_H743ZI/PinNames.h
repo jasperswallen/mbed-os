@@ -240,38 +240,18 @@ typedef enum {
     A0          = PA_3,
     A1          = PC_0,
     A2          = PC_3,
-#ifdef TARGET_NUCLEO_H743ZI2
-    A3          = PB_1,
-    A4          = PC_2,
-#else
     A3          = PF_3,
     A4          = PF_5,
-#endif
     A5          = PF_10,
-#ifdef TARGET_NUCLEO_H743ZI2
-    D0          = PB_7,
-    D1          = PB_6,
-    D2          = PG_14,
-#else
     D0          = PG_9,
     D1          = PG_14,
     D2          = PF_15,
-#endif
     D3          = PE_13,
-#ifdef TARGET_NUCLEO_H743ZI2
-    D4          = PE_14,
-#else
     D4          = PF_14,
-#endif
     D5          = PE_11,
     D6          = PE_9,
-#ifdef TARGET_NUCLEO_H743ZI2
-    D7          = PG_12,
-    D8          = PF_3,
-#else
     D7          = PF_13,
     D8          = PF_12,
-#endif
     D9          = PD_15,
     D10         = PD_14,
     D11         = STM32_D11_SPI_ETHERNET_PIN, /* config in targets.json file */
@@ -294,11 +274,7 @@ typedef enum {
 
     // Generic signals namings
     LED1        = PB_0,  // LD1 = GREEN
-#ifdef TARGET_NUCLEO_H743ZI2
-    LED2        = PE_1,  // Yellow
-#else
     LED2        = PB_7,  // Blue
-#endif
     LED3        = PB_14, // Red
     LED4        = PB_0, // LD4 is not user, mapped to LD1
 
@@ -318,12 +294,14 @@ typedef enum {
     SPI_CS      = D10,
     PWM_OUT     = D9,
 
-    /**** USB pins ****/
+    /**** USB FS pins ****/
     USB_OTG_FS_DM = PA_11,
     USB_OTG_FS_DP = PA_12,
     USB_OTG_FS_ID = PA_10,
     USB_OTG_FS_SOF = PA_8,
     USB_OTG_FS_VBUS = PA_9,
+
+    /**** USB HS pins ****/
     USB_OTG_HS_DM = PB_14,
     USB_OTG_HS_DP = PB_15,
     USB_OTG_HS_ID = PB_12,

@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_crypto_server.h
-* \version 2.30
+* \version 2.30.4
 *
 * \brief
 *  This file provides the prototypes for common API
 *  in the Crypto driver.
 *
 ********************************************************************************
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,6 @@
 #define CY_CRYPTO_SERVER_H
 
 #include "cy_crypto_common.h"
-#include "cy_syslib.h"
 
 #if defined(CY_IP_MXCRYPTO)
 

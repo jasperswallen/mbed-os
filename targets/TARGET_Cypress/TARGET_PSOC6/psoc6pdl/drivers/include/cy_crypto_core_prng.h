@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_crypto_core_prng.h
-* \version 2.30
+* \version 2.30.4
 *
 * \brief
 *  This file provides provides constant and parameters for the API of the PRNG
 *  in the Crypto block driver.
 *
 ********************************************************************************
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,6 +30,10 @@
 #include "cy_crypto_common.h"
 
 #if defined(CY_IP_MXCRYPTO)
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 #if (CPUSS_CRYPTO_PR == 1)
 
@@ -132,6 +136,10 @@ __STATIC_INLINE cy_en_crypto_status_t Cy_Crypto_Core_Prng(CRYPTO_Type *base,
 /** \} group_crypto_lld_rng_functions */
 
 #endif /* #if (CPUSS_CRYPTO_PR == 1) */
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* CY_IP_MXCRYPTO */
 

@@ -1,31 +1,19 @@
 /* mbed Microcontroller Library
- *******************************************************************************
- * Copyright (c) 2017, STMicroelectronics
- * All rights reserved.
+ * Copyright (c) 2017 ARM Limited
+ * Copyright (c) 2017 STMicroelectronics
+ * SPDX-License-Identifier: Apache-2.0
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 3. Neither the name of STMicroelectronics nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *******************************************************************************
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #if DEVICE_FLASH
@@ -73,27 +61,6 @@ int32_t flash_free(flash_t *obj)
     return 0;
 }
 
-static int32_t flash_unlock(void)
-{
-    /* Allow Access to Flash control registers and user Falsh */
-    if (HAL_FLASH_Unlock()) {
-        return -1;
-    } else {
-        return 0;
-    }
-}
-
-static int32_t flash_lock(void)
-{
-    /* Disable the Flash option control register access (recommended to protect
-    the option Bytes against possible unwanted operations) */
-    if (HAL_FLASH_Lock()) {
-        return -1;
-    } else {
-        return 0;
-    }
-}
-
 int32_t flash_erase_sector(flash_t *obj, uint32_t address)
 {
     /* Variable used for Erase procedure */
@@ -106,9 +73,11 @@ int32_t flash_erase_sector(flash_t *obj, uint32_t address)
         return -1;
     }
 
-    if (flash_unlock() != HAL_OK) {
+    if (HAL_FLASH_Unlock() != HAL_OK) {
         return -1;
     }
+
+    core_util_critical_section_enter();
 
     /* Note: If an erase operation in Flash memory also concerns data in the data or instruction cache,
        you have to make sure that these data are rewritten before they are accessed during code
@@ -134,7 +103,11 @@ int32_t flash_erase_sector(flash_t *obj, uint32_t address)
     SCB_CleanInvalidateDCache_by_Addr((uint32_t *)GetSectorBase(SectorId), GetSectorSize(SectorId));
     SCB_InvalidateICache();
 
-    flash_lock();
+    core_util_critical_section_exit();
+
+    if (HAL_FLASH_Lock() != HAL_OK) {
+        return -1;
+    }
 
     return status;
 }
@@ -150,9 +123,11 @@ int32_t flash_program_page(flash_t *obj, uint32_t address, const uint8_t *data,
         return -1;
     }
 
-    if (flash_unlock() != HAL_OK) {
+    if (HAL_FLASH_Unlock() != HAL_OK) {
         return -1;
     }
+
+    core_util_critical_section_enter();
 
     /* Note: If an erase operation in Flash memory also concerns data in the data or instruction cache,
        you have to make sure that these data are rewritten before they are accessed during code
@@ -176,7 +151,11 @@ int32_t flash_program_page(flash_t *obj, uint32_t address, const uint8_t *data,
     SCB_CleanInvalidateDCache_by_Addr((uint32_t *)StartAddress, FullSize);
     SCB_InvalidateICache();
 
-    flash_lock();
+    core_util_critical_section_exit();
+
+    if (HAL_FLASH_Lock() != HAL_OK) {
+        return -1;
+    }
 
     return status;
 }

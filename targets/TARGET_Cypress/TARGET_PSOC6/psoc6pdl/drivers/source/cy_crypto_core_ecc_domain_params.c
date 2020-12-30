@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_crypto_core_ecc_domain_params.c
-* \version 2.30
+* \version 2.30.4
 *
 * \brief
 *  This file provides constant and parameters for the API for the ECC
 *  in the Crypto driver.
 *
 ********************************************************************************
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,10 +25,12 @@
 
 
 #include "cy_crypto_core_ecc.h"
-#include "cy_syslib.h"
 
 #if defined(CY_IP_MXCRYPTO)
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 /*******************************************************************************
 * Function Name: Cy_Crypto_Core_ECC_GetCurveParams
@@ -466,6 +468,11 @@ cy_stc_crypto_ecc_dp_type *Cy_Crypto_Core_ECC_GetCurveParams(cy_en_crypto_ecc_cu
     return tmpResult;
 }
 
+#if defined(__cplusplus)
+}
+#endif
+
 #endif /* CY_IP_MXCRYPTO */
+
 
 /* [] END OF FILE */

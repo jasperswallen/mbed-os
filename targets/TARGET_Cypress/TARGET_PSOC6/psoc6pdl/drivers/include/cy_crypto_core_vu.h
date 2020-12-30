@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_crypto_core_hw.h
-* \version 2.30
+* \version 2.30.4
 *
 * \brief
 *  This file provides the headers to the API for the utils
 *  in the Crypto driver.
 *
 ********************************************************************************
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,12 +31,15 @@
 
 #if defined(CY_IP_MXCRYPTO)
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #if (CPUSS_CRYPTO_VU == 1)
 
 #include "cy_crypto_core_hw.h"
 #include "cy_crypto_core_hw_vu.h"
 #include <string.h>
-
 
 /**
 * \addtogroup group_crypto_lld_vu_functions
@@ -329,9 +332,12 @@ void Cy_Crypto_Core_VU_RegInvertEndianness(CRYPTO_Type *base, uint32_t srcReg);
 
 #endif /* #if (CPUSS_CRYPTO_VU == 1) */
 
+#if defined(__cplusplus)
+}
+#endif
+
 #endif /* CY_IP_MXCRYPTO */
 
 #endif /* #if !defined(CY_CRYPTO_CORE_VU_H) */
 
 /* [] END OF FILE */
-

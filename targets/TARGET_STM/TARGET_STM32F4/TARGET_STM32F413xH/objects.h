@@ -1,5 +1,6 @@
 /* mbed Microcontroller Library
  * Copyright (c) 2017 ARM Limited
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,16 +43,6 @@ struct port_s {
 
 struct trng_s {
     RNG_HandleTypeDef handle;
-};
-
-struct qspi_s {
-    QSPI_HandleTypeDef handle;
-    PinName io0;
-    PinName io1;
-    PinName io2;
-    PinName io3;
-    PinName sclk;
-    PinName ssel;
 };
 
 #include "common_objects.h"

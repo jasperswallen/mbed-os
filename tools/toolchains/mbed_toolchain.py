@@ -2,6 +2,7 @@
 mbed SDK
 SPDX-License-Identifier: Apache-2.0
 Copyright (c) 2011-2013 ARM Limited
+SPDX-License-Identifier: Apache-2.0
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -49,6 +50,7 @@ from ..config import (ConfigException, RAM_ALL_MEMORIES, ROM_ALL_MEMORIES)
 from ..regions import (UPDATE_WHITELIST, merge_region_list)
 from ..settings import COMPARE_FIXED
 from ..settings import ARM_PATH, ARMC6_PATH, GCC_ARM_PATH, IAR_PATH
+from future.utils import with_metaclass
 
 
 TOOLCHAIN_PATHS = {
@@ -108,8 +110,9 @@ CORTEX_SYMBOLS = {
                         "__MBED_CMSIS_RTOS_CM", "__DSP_PRESENT=1U"],
 }
 
+UNSUPPORTED_C_LIB_EXCEPTION_STRING = "{} C library option not supported for this target."
 
-class mbedToolchain:
+class mbedToolchain(with_metaclass(ABCMeta, object)):
     OFFICIALLY_SUPPORTED = False
 
     # Verbose logging
@@ -127,12 +130,10 @@ class mbedToolchain:
 
     PROFILE_FILE_NAME = ".profile"
 
-    __metaclass__ = ABCMeta
-
     profile_template = {'common': [], 'c': [], 'cxx': [], 'asm': [], 'ld': []}
 
     def __init__(self, target, notify=None, macros=None, build_profile=None,
-                 build_dir=None):
+                 build_dir=None, coverage_patterns=None):
         self.target = target
         self.name = self.__class__.__name__
 
@@ -189,6 +190,9 @@ class mbedToolchain:
 
         # Used by the mbed Online Build System to build in chrooted environment
         self.CHROOT = None
+
+        self.coverage_supported = False
+        self.coverage_patterns = coverage_patterns
 
         # post-init hook used by the online compiler TODO: remove this.
         self.init()
@@ -556,9 +560,7 @@ class mbedToolchain:
                             ])
                         objects.append(result['object'])
                     except ToolException as err:
-                        if p._taskqueue.queue:
-                            p._taskqueue.queue.clear()
-                            sleep(0.5)
+                        # Stop the worker processes immediately without completing outstanding work
                         p.terminate()
                         p.join()
                         raise ToolException(err)
@@ -650,7 +652,7 @@ class mbedToolchain:
 
     @abstractmethod
     def parse_output(self, output):
-        """Take in compiler output and extract sinlge line warnings and errors from it.
+        """Take in compiler output and extract single line warnings and errors from it.
 
         Positional arguments:
         output -- a string of all the messages emitted by a run of the compiler
@@ -733,13 +735,17 @@ class mbedToolchain:
         new_path = join(tmp_path, head)
         mkdir(new_path)
 
+        # The output file names are derived from the project name, but this can have spaces in it which
+        # messes-up later processing. Replace any spaces in the derived names with '_'
+        tail = tail.replace(" ", "_")
+
         # Absolute path of the final linked file
         if self.config.has_regions:
-            elf = join(tmp_path, name + '_application.elf')
-            mapfile = join(tmp_path, name + '_application.map')
+            elf = join(new_path, tail + '_application.elf')
+            mapfile = join(new_path, tail + '_application.map')
         else:
-            elf = join(tmp_path, name + '.elf')
-            mapfile = join(tmp_path, name + '.map')
+            elf = join(new_path, tail + '.elf')
+            mapfile = join(new_path, tail + '.map')
 
         objects = sorted(set(r.get_file_paths(FileType.OBJECT)))
         config_file = ([self.config.app_config_location]
@@ -768,21 +774,21 @@ class mbedToolchain:
                 if exists(old_mapfile):
                     remove(old_mapfile)
                 rename(mapfile, old_mapfile)
-            self.progress("link", name)
+            self.progress("link", tail)
             self.link(elf, objects, libraries, lib_dirs, linker_script)
 
         if self.config.has_regions:
-            filename = "{}_application.{}".format(name, ext)
+            filename = "{}_application.{}".format(tail, ext)
         else:
-            filename = "{}.{}".format(name, ext)
-        full_path = join(tmp_path, filename)
+            filename = "{}.{}".format(tail, ext)
+        full_path = join(new_path, filename)
         if ext != 'elf':
             if full_path and self.need_update(full_path, [elf]):
-                self.progress("elf2bin", name)
+                self.progress("elf2bin", tail)
                 self.binary(r, elf, full_path)
             if self.config.has_regions:
                 full_path, updatable = self._do_region_merge(
-                    name, full_path, ext
+                    tail, full_path, ext
                 )
             else:
                 updatable = None
@@ -794,7 +800,7 @@ class mbedToolchain:
             self._get_toolchain_labels()
         )
         if post_build_hook:
-            self.progress("post-build", name)
+            self.progress("post-build", tail)
             post_build_hook(self, r, elf, full_path)
         # Initialize memap and process map file. This doesn't generate output.
         self.mem_stats(mapfile)
@@ -902,8 +908,8 @@ class mbedToolchain:
                     ", ".join(r.name for r in regions)
                 ))
                 self._add_all_regions(regions, "MBED_APP")
-            except ConfigException:
-                pass
+            except ConfigException as error:
+                self.notify.info("Configuration error: %s" % str(error))
 
         if self.config.has_ram_regions:
             try:
@@ -913,15 +919,17 @@ class mbedToolchain:
                     ", ".join(r.name for r in regions)
                 ))
                 self._add_all_regions(regions, None)
-            except ConfigException:
-                pass
+            except ConfigException as error:
+                self.notify.info("Configuration error: %s" % str(error))
 
         Region = namedtuple("Region", "name start size")
 
+        if not getattr(self.target, "static_memory_defines", False):
+            self.notify.info("Configuration error: 'static_memory_defines' is not defined.")
+            return
+
         try:
             # Add all available ROM regions to build profile
-            if not getattr(self.target, "static_memory_defines", False):
-                raise ConfigException()
             rom_available_regions = self.config.get_all_active_memories(
                 ROM_ALL_MEMORIES
             )
@@ -932,12 +940,11 @@ class mbedToolchain:
                     True,
                     suffixes=["_START", "_SIZE"]
                 )
-        except ConfigException:
-            pass
+        except ConfigException as error:
+            self.notify.info("Configuration error: %s" % str(error))
+
         try:
             # Add all available RAM regions to build profile
-            if not getattr(self.target, "static_memory_defines", False):
-                raise ConfigException()
             ram_available_regions = self.config.get_all_active_memories(
                 RAM_ALL_MEMORIES
             )
@@ -948,11 +955,12 @@ class mbedToolchain:
                     True,
                     suffixes=["_START", "_SIZE"]
                 )
-        except ConfigException:
-            pass
+        except ConfigException as error:
+            self.notify.info("Configuration error: %s" % str(error))
 
     STACK_PARAM = "target.boot-stack-size"
     TFM_LVL_PARAM = "tfm.level"
+    XIP_ENABLE_PARAM = "target.xip-enable"
 
     def add_linker_defines(self):
         params, _ = self.config_data
@@ -974,14 +982,13 @@ class mbedToolchain:
             self.ld.append(define_string)
             self.flags["ld"].append(define_string)
 
-        if self.target.is_PSA_secure_target:
-            for flag, param in [
-                ("MBED_PUBLIC_RAM_START", "target.public-ram-start"),
-                ("MBED_PUBLIC_RAM_SIZE", "target.public-ram-size")
-            ]:
-                define_string = self.make_ld_define(flag, params[param].value)
-                self.ld.append(define_string)
-                self.flags["ld"].append(define_string)
+        if self.XIP_ENABLE_PARAM in params:
+            define_string = self.make_ld_define(
+                "XIP_ENABLE",
+                params[self.XIP_ENABLE_PARAM].value
+            )
+            self.ld.append(define_string)
+            self.flags["ld"].append(define_string)
 
         if hasattr(self.target, 'post_binary_hook'):
             if self.target.post_binary_hook is None:
@@ -1074,6 +1081,37 @@ class mbedToolchain:
             where = join(self.build_dir, self.PROFILE_FILE_NAME + "-" + key)
             self._overwrite_when_not_equal(where, json.dumps(
                 to_dump, sort_keys=True, indent=4))
+
+    def check_and_add_minimal_printf(self, target):
+        """Add toolchain flag if minimal-printf is selected."""
+        if (
+            getattr(target, "printf_lib", "std") == "minimal-printf"
+            and "-DMBED_MINIMAL_PRINTF" not in self.flags["common"]
+        ):
+            self.flags["common"].append("-DMBED_MINIMAL_PRINTF")
+
+    def check_c_lib_supported(self, target, toolchain):
+        """
+        Check and raise an exception if the requested C library is not supported,
+
+        target.c_lib is modified to have the lowercased string of its original string.
+        This is done to be case insensitive when validating.
+        """
+        if hasattr(target, "default_lib"):
+            # Use default_lib as the c_lib attribute. This allows backwards
+            # compatibility with older target definitions, allowing either
+            # default_lib or c_lib to specify the C library to use.
+            target.c_lib = target.default_lib.lower()
+        if hasattr(target, "c_lib"):
+            target.c_lib = target.c_lib.lower()
+            if (
+                hasattr(target, "supported_c_libs") == False
+                or toolchain not in target.supported_c_libs
+                or target.c_lib not in target.supported_c_libs[toolchain]
+            ):
+                raise NotSupportedException(
+                   UNSUPPORTED_C_LIB_EXCEPTION_STRING.format(target.c_lib)
+                )
 
     @staticmethod
     def _overwrite_when_not_equal(filename, content):
@@ -1347,3 +1385,28 @@ class mbedToolchain:
         to_ret['linker'] = {'flags': copy(self.flags['ld'])}
         to_ret.update(self.config.report)
         return to_ret
+
+def should_replace_small_c_lib(target, toolchain):
+    """
+    Check if the small C lib should be replaced with the standard C lib.
+    Return True if the replacement occurs otherwise return False.
+    """
+    return (
+        not is_library_supported("small", target, toolchain)
+        and is_library_supported("std", target, toolchain)
+        and target.c_lib == "small"
+    )
+
+
+def is_library_supported(lib_type, target, toolchain):
+    """
+    Check if a library type is supported by a toolchain for a given target.
+
+    Return True if the library type is supported, False if not supported or
+    the target does not have an supported_c_libs attribute.
+    """
+    return (
+        hasattr(target, "supported_c_libs")
+        and toolchain.lower() in target.supported_c_libs
+        and lib_type in target.supported_c_libs[toolchain.lower()]
+    )

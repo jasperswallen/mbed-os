@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_crypto_core_ecc_nist_p.h
-* \version 2.30
+* \version 2.30.4
 *
 * \brief
 *  This file provides constant and parameters for the API for the ECC
 *  in the Crypto driver.
 *
 ********************************************************************************
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -27,9 +27,12 @@
 #define CY_CRYPTO_CORE_NIST_P_H
 
 #include "cy_crypto_core_ecc.h"
-#include "cy_syslib.h"
 
 #if defined(CY_IP_MXCRYPTO)
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 #if (CPUSS_CRYPTO_VU == 1)
 
@@ -68,6 +71,10 @@ void Cy_Crypto_Core_JacobianInvTransform(CRYPTO_Type *base, uint32_t s_x, uint32
 void Cy_Crypto_Core_EC_NistP_PointMul(CRYPTO_Type *base, uint32_t p_x, uint32_t p_y, uint32_t p_d, uint32_t p_order, uint32_t bitsize);
 
 #endif /* #if (CPUSS_CRYPTO_VU == 1) */
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* #if defined(CY_IP_MXCRYPTO) */
 

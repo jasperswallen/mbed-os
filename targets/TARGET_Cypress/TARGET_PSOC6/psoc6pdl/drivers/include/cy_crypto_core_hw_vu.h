@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_crypto_core_hw_vu.h
-* \version 2.30
+* \version 2.30.4
 *
 * \brief
 *  This file provides constants and function prototypes
 *  for the Vector Unit functions in the Crypto block driver.
 *
 ********************************************************************************
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,14 +27,15 @@
 #if !defined(CY_CRYPTO_CORE_HW_VU_H)
 #define CY_CRYPTO_CORE_HW_VU_H
 
-#include "cy_device_headers.h"
+#include "cy_crypto_core_hw.h"
 
 #if defined(CY_IP_MXCRYPTO)
 
-#if (CPUSS_CRYPTO_VU == 1)
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
-#include "cy_device.h"
-#include "cy_crypto_core_hw.h"
+#if (CPUSS_CRYPTO_VU == 1)
 
 /***************************************
 *        Crypto IP opcodes
@@ -1109,6 +1110,10 @@ __STATIC_INLINE void CY_CRYPTO_VU_RESTORE_REG (CRYPTO_Type *base, uint32_t rdst,
 
 
 #endif /* #if (CPUSS_CRYPTO_VU == 1) */
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* CY_IP_MXCRYPTO */
 

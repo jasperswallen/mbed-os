@@ -114,13 +114,15 @@ while read file; do
         echo "_________________________________"
     fi
 
-done < <(find "${1}" -type d -iname "*target*" -prune -o -name '*.h' -print)
+# ${1}: directory to check
+# ${2}: file containing a list of paths (regex) to exclude
+done < <(find "${1}" -type d -iname "*target*" -prune -o -name '*.h' -print | grep -v -f "${2}")
 
 echo "----------------------------------------------------------------------------------"
 echo "Total Errors Found: ${ERRORS}"
 
 if [ ${ERRORS} -ne 0 ]; then
     echo "If any of the failed words should be considered valid please add them to the ignore.en.pws file"\
-         "found in tools/test/scripts/doxy-spellchecker between the _code_ and _doxy_ tags."
+         "found in tools/test/travis-ci/doxy-spellchecker between the _code_ and _doxy_ tags."
     exit 1
 fi

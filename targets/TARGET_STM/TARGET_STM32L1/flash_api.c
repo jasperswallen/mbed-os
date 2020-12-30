@@ -1,5 +1,7 @@
 /* mbed Microcontroller Library
  * Copyright (c) 2017 ARM Limited
+ * Copyright (c) 2017 STMicroelectronics
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,27 +36,6 @@ int32_t flash_free(flash_t *obj)
     return 0;
 }
 
-static int32_t flash_unlock(void)
-{
-    /* Allow Access to Flash control registers and user Falsh */
-    if (HAL_FLASH_Unlock()) {
-        return -1;
-    } else {
-        return 0;
-    }
-}
-
-static int32_t flash_lock(void)
-{
-    /* Disable the Flash option control register access (recommended to protect
-    the option Bytes against possible unwanted operations) */
-    if (HAL_FLASH_Lock()) {
-        return -1;
-    } else {
-        return 0;
-    }
-}
-
 int32_t flash_erase_sector(flash_t *obj, uint32_t address)
 {
     uint32_t PAGEError = 0;
@@ -66,9 +47,11 @@ int32_t flash_erase_sector(flash_t *obj, uint32_t address)
         return -1;
     }
 
-    if (flash_unlock() != HAL_OK) {
+    if (HAL_FLASH_Unlock() != HAL_OK) {
         return -1;
     }
+
+    core_util_critical_section_enter();
 
     __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPTVERR | FLASH_FLAG_EOP | FLASH_FLAG_PGAERR | FLASH_FLAG_WRPERR);
     /* MBED HAL erases 1 sector at a time */
@@ -86,7 +69,11 @@ int32_t flash_erase_sector(flash_t *obj, uint32_t address)
         status = -1;
     }
 
-    flash_lock();
+    core_util_critical_section_exit();
+
+    if (HAL_FLASH_Lock() != HAL_OK) {
+        return -1;
+    }
 
     return status;
 
@@ -107,9 +94,11 @@ int32_t flash_program_page(flash_t *obj, uint32_t address,
         return -1;
     }
 
-    if (flash_unlock() != HAL_OK) {
+    if (HAL_FLASH_Unlock() != HAL_OK) {
         return -1;
     }
+
+    core_util_critical_section_enter();
 
     /* Program the user Flash area word by word */
     StartAddress = address;
@@ -141,7 +130,11 @@ int32_t flash_program_page(flash_t *obj, uint32_t address,
         }
     }
 
-    flash_lock();
+    core_util_critical_section_exit();
+
+    if (HAL_FLASH_Lock() != HAL_OK) {
+        return -1;
+    }
 
     return status;
 }

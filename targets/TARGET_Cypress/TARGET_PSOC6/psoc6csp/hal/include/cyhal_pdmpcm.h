@@ -9,7 +9,7 @@
 *
 ********************************************************************************
 * \copyright
-* Copyright 2018-2019 Cypress Semiconductor Corporation
+* Copyright 2018-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,148 +26,265 @@
 *******************************************************************************/
 
 /**
-* \addtogroup group_hal_pdmpcm PDM/PCM (PDM-PCM Converter)
+* \addtogroup group_hal_pdmpcm PDM/PCM (Pulse-Density Modulation to Pulse-Code Modulation Converter)
 * \ingroup group_hal
 * \{
-* High level interface for interacting with the Cypress PDM/PCM.
+* High level interface for interacting with the pulse-density modulation to
+* pulse-code modulation (PDM/PCM) converter.
 *
-* \defgroup group_hal_pdmpcm_macros Macros
-* \defgroup group_hal_pdmpcm_functions Functions
-* \defgroup group_hal_pdmpcm_data_structures Data Structures
-* \defgroup group_hal_pdmpcm_enums Enumerated Types
+* The PDM/PCM converter is a asynchronous operation. A PDM-PCM converter is used
+* to convert 1-bit digital audio streaming data to PCM data. The sample rate, word
+* size, and channels can all be configured.
+*
+* \section section_pdmpcm_features Features
+*
+* * Supports FIFO buffer for Incoming Data
+* * Configurable Gain Settings
+* * Configurable Word Length
+* * Configurable interrupt and callback assignment from PDM/PCM events - \ref cyhal_pdm_pcm_event_t
+*
+* \section section_pdmpcm_quickstart Quick Start
+* Initialize a PDM/PCM converter instance using the \ref cyhal_pdm_pcm_init and
+* provide the clock and data pins.<br>
+* See \ref subsection_pdmpcm_snippet_1 for example initialization.
+* \note The clock parameter (const \ref cyhal_clock_divider_t *clk) is optional and
+* can be set to NULL to generate and use an available clock resource with a default
+* frequency.
+*
+* \section section_pdmpcm_snippets Code Snippets
+* \note Error checking is omitted for clarity
+*
+* \subsection subsection_pdmpcm_snippet_1 Snippet 1: PDM/PCM Initialization and Configuration
+* This snippet initializes a PCM/PCM resource for conversion and assigns the pins.
+*
+* \snippet pdmpcm.c snippet_cyhal_pdmpcm_init
+*
+* \subsection subsection_pdmpcm_snippet_2 Snippet 2: PDM/PCM Asynchronous Receive
+* This snippet shows how to receive data in the background using \ref cyhal_pdm_pcm_read_async.
+* Notification of the asynchronous read completion is achieved by using \ref cyhal_pdm_pcm_register_callback
+* to register a callback function and \ref cyhal_pdm_pcm_enable_event to enable callling the
+* callback when an synchonous read completes.
+*
+* \snippet pdmpcm.c snippet_cyhal_pdmpcm_async_receive
+*
+* \section subsection_pdmpcm_moreinformation More Information
+*
+* <b>Code examples (Github)</b>
+* * <a href="https://github.com/cypresssemiconductorco/mtb-example-psoc6-pdm-pcm" ><b>
+PSoC 6 MCU: PDM-to-PCM</b></a>
+* * <a href="https://github.com/cypresssemiconductorco/mtb-example-psoc6-pdm-to-i2s" ><b>
+PSoC 6 MCU: PDM to I2S</b></a>
 */
 
 #pragma once
 
-#include <stdint.h>
 #include <stdbool.h>
-#include "cy_result.h"
+#include <stddef.h>
+#include <stdint.h>
+#include "cyhal_general_types.h"
 #include "cyhal_hw_types.h"
+#include "cyhal_pin_package.h"
+#include "cyhal_syspm.h"
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
+/** \addtogroup group_hal_results
+ *  \{ *//**
+ *  \{ @name PDM/PCM Results
+ */
+
+/** The pin PDM/PCM hardware cannot be initialized with the passed in pin */
+#define CYHAL_PDM_PCM_RSLT_ERR_INVALID_PIN              \
+    (CYHAL_RSLT_CREATE(CY_RSLT_TYPE_ERROR, CYHAL_RSLT_MODULE_PDMPCM, 0))
+/** A configuration parameter is invalid: sample_rate, decimation_rate, PCM word length, left/right gain.
+ * See the implementation specific documentation for valid range */
+#define CYHAL_PDM_PCM_RSLT_ERR_INVALID_CONFIG_PARAM     \
+    (CYHAL_RSLT_CREATE(CY_RSLT_TYPE_ERROR, CYHAL_RSLT_MODULE_PDMPCM, 1))
+/** An async read operation is already progres */
+#define CYHAL_PDM_PCM_RSLT_ERR_ASYNC_IN_PROGRESS        \
+    (CYHAL_RSLT_CREATE(CY_RSLT_TYPE_ERROR, CYHAL_RSLT_MODULE_PDMPCM, 2))
+
 /**
-* \addtogroup group_hal_pdmpcm_enums
-* \{
-*/
+ * \} \}
+ */
 
 /** PDM/PCM interrupt triggers */
 typedef enum {
-    /** TODO: Fill in */
-    CY_PDM_PCM_TBD,
-} cyhal_pdm_pcm_irq_event_t;
+    CYHAL_PDM_PCM_RX_HALF_FULL   = 0x01, /**< RX hardware buffer is half full */
+    CYHAL_PDM_PCM_RX_NOT_EMPTY   = 0x02, /**< RX hardware buffer is not empty */
+    CYHAL_PDM_PCM_RX_OVERFLOW    = 0x04, /**< Attempt to write to a full RX hardware buffer */
+    CYHAL_PDM_PCM_RX_UNDERFLOW   = 0x08, /**< Attempt to read from an empty buffer */
+    CYHAL_PDM_PCM_ASYNC_COMPLETE = 0x10, /**< Async operation completed */
+} cyhal_pdm_pcm_event_t;
 
-/** \} group_hal_pdmpcm_enums */
-
-/**
-* \addtogroup group_hal_pdmpcm_data_structures
-* \{
-*/
+/** PDM/PCM channel select */
+typedef enum {
+    CYHAL_PDM_PCM_MODE_LEFT,   /**< The channel mono left */
+    CYHAL_PDM_PCM_MODE_RIGHT,  /**< The channel mono right */
+    CYHAL_PDM_PCM_MODE_STEREO, /**< The channel stereo */
+} cyhal_pdm_pcm_mode_t;
 
 /** Describes the current configuration of a PDM/PCM */
 typedef struct
 {
-    /** TODO: define */
-    void * cfg;
+    uint32_t sample_rate;       /**< Sample rate in Hz */
+    uint8_t decimation_rate;    /**< PDM decimation rate */
+    cyhal_pdm_pcm_mode_t mode;  /**< left, right, or stereo */
+    uint8_t word_length;        /**< PCM word length in bits, see the implementation specific documentation for valid range */
+    int8_t left_gain;           /**< PGA in 0.5 dB increment, for example a value of 5 would mean +2.5 dB. The closest fit value will be used, see the implementation specific documentation for valid ranges. This may be negative if the implementation supports it. */
+    int8_t right_gain;          /**< PGA in 0.5 dB increment, for example a value of 5 would mean +2.5 dB. The closest fit value will be used, see the implementation specific documentation for valid ranges. This may be negative if the implementation supports it. */
 } cyhal_pdm_pcm_cfg_t;
 
 /** Handler for PDM/PCM interrupts */
-typedef void (*cyhal_pdm_pcm_irq_handler_t)(void *handler_arg, cyhal_pdm_pcm_irq_event_t event);
-
-/** \} group_hal_pdmpcm_data_structures */
-
-
-/**
-* \addtogroup group_hal_pdmpcm_functions
-* \{
-*/
+typedef void (*cyhal_pdm_pcm_event_callback_t)(void *handler_arg, cyhal_pdm_pcm_event_t event);
 
 /** Initialize the PDM/PCM peripheral
  *
  * Configures the pins used by PDM/PCM converter, sets a default format and frequency, and enables the peripheral
- * @param[out] obj The PDM/PCM object to initialize
- * @param[in]  in  The pin to use for PDM input
- * @param[in]  clk The pin to use for PDM clock output
+ * @param[out] obj        Pointer to a PDM/PCM object. The caller must allocate the memory
+ *                          for this object but the init function will initialize its contents.
+ * @param[in]  pin_data   The pin to use for PDM input
+ * @param[in]  pin_clk    The pin to use for PDM clock output
+ * @param[in]  clk_source The clock source for PDM/PCM block
+ * @param[in]  cfg        The configuration for the PDM/PCM block
  * @return The status of the init request
  */
-cy_rslt_t cyhal_pdm_pcm_init(cyhal_pdm_pcm_t *obj, cyhal_gpio_t in, cyhal_gpio_t clk);
+cy_rslt_t cyhal_pdm_pcm_init(cyhal_pdm_pcm_t *obj, cyhal_gpio_t pin_data, cyhal_gpio_t pin_clk,
+                const cyhal_clock_divider_t *clk_source, const cyhal_pdm_pcm_cfg_t *cfg);
 
-/** Release a PDM/PCM object
+/** Release a PDM/PCM object, behavior is undefined if an asynchronous read is in progress
  *
  * Return the peripheral, pins and clock owned by the PDM/PCM object to their reset state
  * @param[in,out] obj The PDM/PCM object to deinitialize
  */
 void cyhal_pdm_pcm_free(cyhal_pdm_pcm_t *obj);
 
-/** Updates the configuration of the PDM/PCM object
+/**
+ * Start the PDM/PCM operation
  *
- * @param[inout] obj   The PDM/PCM object to configure
- * @param[in] cfg  The configuration of the PDM/PCM
- * @return The status of the format request
+ * @param[in] obj The PDM/PCM object to start
+ * @return the status of the start request
  */
-cy_rslt_t cyhal_pdm_pcm_config(cyhal_pdm_pcm_t *obj, const cyhal_pdm_pcm_cfg_t *cfg);
+cy_rslt_t cyhal_pdm_pcm_start(cyhal_pdm_pcm_t *obj);
 
-/** Clears the FIFO
+/**
+ * Stop the PDM/PCM operation
  *
- * @param[in] obj The PDM/PCM peripheral to use for sending
+ * @param[in] obj The PDM/PCM object to start
+ * @return the status of the stop request
+ */
+cy_rslt_t cyhal_pdm_pcm_stop(cyhal_pdm_pcm_t *obj);
+
+/** Updates the PDM/PCM channel gains. Each integer increment represent a 0.5 dB value.
+ * For example: a gain value of 5 would mean +2.5 dB.
+ * If the exact gain value requested is not supported, it will be rounded to the
+ * nearest legal value. See the implementation specific documentation for valid ranges.
+ *
+ * \note Gains may be negative if the implementation supports it.
+ *
+ * @param[in] obj        The PDM/PCM object to configure
+ * @param[in] gain_left  The gain of the left channel in units of 0.5 dB
+ * @param[in] gain_right The gain of the right channel in units of 0.5 dB
+ * @return The status of the set gain operation. An error will be returned if the value is outside of range supported by HW.
+ */
+cy_rslt_t cyhal_pdm_pcm_set_gain(cyhal_pdm_pcm_t *obj, int8_t gain_left, int8_t gain_right);
+
+/** Clears the hardware buffer
+ *
+ * @param[in] obj The PDM/PCM peripheral
  * @return The status of the clear request
  */
 cy_rslt_t cyhal_pdm_pcm_clear(cyhal_pdm_pcm_t *obj);
 
-/** Reads a block out of the FIFO
+/** Reads data synchronously
  *
- * @param[in]     obj    The PDM/PCM peripheral to use for sending
- * @param[out]    data   Pointer to the byte-array of data to read from the device
- * @param[in,out] length Number of bytes to read, updated with the number actually read
+ * This will read either `length` words or the number of words that are currently available in the
+ * receive buffer, whichever is less, then return. The value pointed to by `length` will be updated
+ * to reflect the number of words that were actually read.
+ *  If there are less data in FIFO than length, length will be update with number of words read.
+ *
+ * @param[in]     obj    The PDM/PCM peripheral
+ * @param[out]    data   Pointer to word array where incoming data will be stored. Buffer must be aligned to word-size.
+ *                       Each word will be aligned to the next largest power of 2. For example, if the word length is 16 bits,
+ *                       each word will consume two bytes. But if the word length is 20, each word will consume 32 bits.
+ *                       Negative value will use sign-extension. -1 with 24-bit word length will have 32-bit value of 0xFFFFFFFF.
+ * @param[in,out] length Number of 32-bit words to read, updated with the number actually read
  * @return The status of the read request
  */
-cy_rslt_t cyhal_pdm_pcm_read(cyhal_pdm_pcm_t *obj, uint8_t *data, uint32_t *length);
+cy_rslt_t cyhal_pdm_pcm_read(cyhal_pdm_pcm_t *obj, void *data, size_t *length);
 
-/** Begin the PDM/PCM transfer
+/** Begin asynchronous PDM/PCM read
  *
- * @param[in]     obj     The PDM/PCM object that holds the transfer information
- * @param[out]    data    The receive buffer
- * @param[in,out] length  Number of bytes to read, updated with the number actually read
+ * This will transfer `length` words into the buffer pointed to by `data` in the background. When the
+ * requested quantity of data has been read, the @ref CYHAL_PDM_PCM_ASYNC_COMPLETE event will be raised.
+ * See @ref cyhal_pdm_pcm_register_callback and @ref cyhal_pdm_pcm_enable_event.
+ *
+ * cyhal_pdm_pcm_set_async_mode can be used to control whether this uses DMA or a CPU-driven transfer.
+ *
+ * @param[in]  obj     The PDM/PCM object
+ * @param[out] data    Pointer to word array where incoming data will be stored. Buffer must be aligned to word-size.
+ *                     Each word will be aligned to the next largest power of 2. For example, if the word length is 16 bits,
+ *                     each word will consume two bytes. But if the word length is 20, each word will consume 32 bits.
+ *                     Negative value will use sign-extension. -1 with 24-bit word length will have 32-bit value of 0xFFFFFFFF.
+ * @param[in]  length  Number of  words to read
  * @return The status of the read_async request
  */
 cy_rslt_t cyhal_pdm_pcm_read_async(cyhal_pdm_pcm_t *obj, void *data, size_t length);
 
-/** Checks if the specified PDM/PCM peripheral is in use
+/** Checks if an async read operation is pending
  *
  * @param[in] obj  The PDM/PCM peripheral to check
- * @return Indication of whether the PDM/PCM is still transmitting
+ * @return Indication of whether a PDM/PCM async operation is pending
  */
-bool cyhal_pdm_pcm_is_busy(cyhal_pdm_pcm_t *obj);
+bool cyhal_pdm_pcm_is_pending(cyhal_pdm_pcm_t *obj);
 
-/** Abort an PDM/PCM transfer
+/** Abort an PDM/PCM operation started by cyhal_pdm_pcm_read_async function
  *
  * @param[in] obj The PDM/PCM peripheral to stop
  * @return The status of the abort_async request
  */
 cy_rslt_t cyhal_pdm_pcm_abort_async(cyhal_pdm_pcm_t *obj);
 
-/** The PDM/PCM interrupt handler registration
+/** Register a PDM/PCM event handler
  *
- * @param[in] obj         The PDM/PCM object
- * @param[in] handler     The callback handler which will be invoked when the interrupt fires
- * @param[in] handler_arg Generic argument that will be provided to the handler when called
- */
-void cyhal_pdm_pcm_register_irq(cyhal_pdm_pcm_t *obj, cyhal_pdm_pcm_irq_handler_t handler, void *handler_arg);
-
-/** Configure PDM/PCM interrupt enablement.
+ * This function will be called when one of the events enabled by \ref cyhal_pdm_pcm_enable_event occurs.
  *
- * @param[in] obj      The PDM/PCM object
- * @param[in] event    The PDM/PCM IRQ type
- * @param[in] enable   True to turn on interrupts, False to turn off
+ * @param[in] obj          The PDM/PCM object
+ * @param[in] callback     The callback handler which will be invoked when the interrupt fires
+ * @param[in] callback_arg Generic argument that will be provided to the callback when called
  */
-void cyhal_pdm_pcm_irq_enable(cyhal_pdm_pcm_t *obj, cyhal_pdm_pcm_irq_event_t event, bool enable);
+void cyhal_pdm_pcm_register_callback(cyhal_pdm_pcm_t *obj, cyhal_pdm_pcm_event_callback_t callback, void *callback_arg);
 
-/** \} group_hal_pdmpcm_functions */
+/** Configure PDM/PCM event enablement.
+ *
+ * @param[in] obj            The PDM/PCM object
+ * @param[in] event          The PDM/PCM event type
+ * @param[in] intr_priority  The priority for NVIC interrupt events
+ * @param[in] enable         True to turn on events, False to turn off
+ */
+void cyhal_pdm_pcm_enable_event(cyhal_pdm_pcm_t *obj, cyhal_pdm_pcm_event_t event, uint8_t intr_priority, bool enable);
+
+/** Set the mechanism that is used to perform PDM/PCM asynchronous operation. The default is SW.
+ *
+ * When an enabled event occurs, the function specified by \ref cyhal_pdm_pcm_register_callback will be called.
+ *
+ * @param[in] obj          The PDM/PCM object
+ * @param[in] mode         The transfer mode
+ * @param[in] dma_priority The priority, if DMA is used. Valid values are the same as for @ref cyhal_dma_init.
+ *                         If DMA is not selected, the only valid value is CYHAL_DMA_PRIORITY_DEFAULT, and no
+                           guarantees are made about prioritization.
+ * @return The status of the set mode request
+ */
+cy_rslt_t cyhal_pdm_pcm_set_async_mode(cyhal_pdm_pcm_t *obj, cyhal_async_mode_t mode, uint8_t dma_priority);
 
 #if defined(__cplusplus)
 }
 #endif
+
+#ifdef CYHAL_PDMPCM_IMPL_HEADER
+#include CYHAL_PDMPCM_IMPL_HEADER
+#endif /* CYHAL_PDMPCM_IMPL_HEADER */
 
 /** \} group_hal_pdmpcm */

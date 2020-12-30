@@ -28,7 +28,6 @@ int CellularUtil_stub::char_pos = 0;
 char *CellularUtil_stub::char_table[50] = {};
 int CellularUtil_stub::table_idx = 0;
 
-using namespace mbed;
 namespace mbed_cellular_util {
 
 #define MAX_STRING_LEN 200
@@ -51,9 +50,9 @@ uint16_t char_str_to_hex(const char *str, uint16_t len, char *buf, bool omit_lea
     return CellularUtil_stub::uint16_value;
 }
 
-void convert_ipv6(char *ip)
+nsapi_version_t convert_ipv6(char *ip)
 {
-
+    return NSAPI_UNSPEC;
 }
 
 char *find_dot_number(char *str, int dot_number)
@@ -69,9 +68,11 @@ void separate_ip4like_addresses(char *orig, char *ip, size_t ip_size, char *ip2,
                strlen(CellularUtil_stub::char_table[CellularUtil_stub::table_idx]));
         ip[strlen(CellularUtil_stub::char_table[CellularUtil_stub::table_idx])] = '\0';
         CellularUtil_stub::table_idx--;
-        memcpy(ip2, CellularUtil_stub::char_table[CellularUtil_stub::table_idx],
-               strlen(CellularUtil_stub::char_table[CellularUtil_stub::table_idx]));
-        ip2[strlen(CellularUtil_stub::char_table[CellularUtil_stub::table_idx])] = '\0';
+        if (ip2) {
+            memcpy(ip2, CellularUtil_stub::char_table[CellularUtil_stub::table_idx],
+                   strlen(CellularUtil_stub::char_table[CellularUtil_stub::table_idx]));
+            ip2[strlen(CellularUtil_stub::char_table[CellularUtil_stub::table_idx])] = '\0';
+        }
     }
 }
 
@@ -83,9 +84,11 @@ void separate_ip_addresses(char *orig, char *ip, size_t ip_size, char *ip2, size
                strlen(CellularUtil_stub::char_table[CellularUtil_stub::table_idx]));
         ip[strlen(CellularUtil_stub::char_table[CellularUtil_stub::table_idx])] = '\0';
         CellularUtil_stub::table_idx--;
-        memcpy(ip2, CellularUtil_stub::char_table[CellularUtil_stub::table_idx],
-               strlen(CellularUtil_stub::char_table[CellularUtil_stub::table_idx]));
-        ip2[strlen(CellularUtil_stub::char_table[CellularUtil_stub::table_idx])] = '\0';
+        if (ip2) {
+            memcpy(ip2, CellularUtil_stub::char_table[CellularUtil_stub::table_idx],
+                   strlen(CellularUtil_stub::char_table[CellularUtil_stub::table_idx]));
+            ip2[strlen(CellularUtil_stub::char_table[CellularUtil_stub::table_idx])] = '\0';
+        }
     }
 }
 
@@ -128,11 +131,6 @@ int char_str_to_hex_str(const char *str, uint16_t len, char *buf, bool omit_lead
 uint16_t get_dynamic_ip_port()
 {
     return CellularUtil_stub::uint16_value;
-}
-
-pdp_type_t string_to_pdp_type(const char *pdp_type)
-{
-    return IPV4V6_PDP_TYPE;
 }
 
 } // namespace mbed_cellular_util

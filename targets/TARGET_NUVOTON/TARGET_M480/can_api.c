@@ -1,5 +1,7 @@
-/* mbed Microcontroller Library
- * Copyright (c) 2015-2016 Nuvoton
+/*
+ * Copyright (c) 2015-2016, Nuvoton Technology Corporation
+ *
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +25,7 @@
 #include "cmsis.h"
 #include "pinmap.h"
 #include "PeripheralPins.h"
+#include "gpio_api.h"
 #include "nu_modutil.h"
 #include "nu_miscutil.h"
 #include "nu_bitutil.h"
@@ -59,22 +62,26 @@ void can_init_freq(can_t *obj, PinName rd, PinName td, int hz)
     MBED_ASSERT(modinit != NULL);
     MBED_ASSERT(modinit->modname == (int) obj->can);
 
+    obj->pin_rd = rd;
+    obj->pin_td = td;
+
+    pinmap_pinout(td, PinMap_CAN_TD);
+    pinmap_pinout(rd, PinMap_CAN_RD);
+
+    // Enable IP clock
+    CLK_EnableModuleClock(modinit->clkidx);
+
     // Reset this module
     SYS_ResetModule(modinit->rsetidx);
 
     NVIC_DisableIRQ(CAN0_IRQn);
-    NVIC_DisableIRQ(CAN1_IRQn);
-
-    // Enable IP clock
-    CLK_EnableModuleClock(modinit->clkidx);
+    NVIC_DisableIRQ(CAN1_IRQn);    
 
     if(obj->can == CAN_1) {
         obj->index = 1;
     } else
         obj->index = 0;
 
-    pinmap_pinout(td, PinMap_CAN_TD);
-    pinmap_pinout(rd, PinMap_CAN_RD);
 #if 0
     /* TBD: For M487 mbed Board Transmitter Setting (RS Pin) */
     GPIO_SetMode(PA, BIT2| BIT3, GPIO_MODE_OUTPUT);
@@ -103,6 +110,12 @@ void can_free(can_t *obj)
     SYS_ResetModule(modinit->rsetidx);
 
     CLK_DisableModuleClock(modinit->clkidx);
+
+    /* Free up pins */
+    gpio_set(obj->pin_rd);
+    gpio_set(obj->pin_td);
+    obj->pin_rd = NC;
+    obj->pin_td = NC;
 }
 
 int can_frequency(can_t *obj, int hz)

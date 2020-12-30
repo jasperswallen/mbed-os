@@ -45,12 +45,12 @@ void pwmout_free(pwmout_t *obj)
 void pwmout_write(pwmout_t *obj, float percent)
 {
     MBED_ASSERT(percent >= 0.0f && percent <= 1.0f);
-    pwmout_pulsewidth_us(obj, percent * obj->period_us);
+    pwmout_pulsewidth_us(obj, (int)(percent * obj->period_us));
 }
 
 float pwmout_read(pwmout_t *obj)
 {
-    return 100.0f * obj->width_us / obj->period_us;
+    return ((float)(obj->width_us) / obj->period_us);
 }
 
 void pwmout_period(pwmout_t *obj, float seconds)
@@ -66,12 +66,17 @@ void pwmout_period_ms(pwmout_t *obj, int ms)
 void pwmout_period_us(pwmout_t *obj, int us)
 {
     obj->period_us = (uint32_t)us;
-    if (CY_RSLT_SUCCESS != cyhal_pwm_period(&(obj->hal_pwm), obj->period_us, obj->width_us)) {
-        MBED_ERROR(MBED_MAKE_ERROR(MBED_MODULE_DRIVER_PWM, MBED_ERROR_CODE_FAILED_OPERATION), "cyhal_pwm_period");
+    if (CY_RSLT_SUCCESS != cyhal_pwm_set_period(&(obj->hal_pwm), obj->period_us, obj->width_us)) {
+        MBED_ERROR(MBED_MAKE_ERROR(MBED_MODULE_DRIVER_PWM, MBED_ERROR_CODE_FAILED_OPERATION), "cyhal_pwm_set_period");
     }
     if (CY_RSLT_SUCCESS != cyhal_pwm_start(&(obj->hal_pwm))) {
         MBED_ERROR(MBED_MAKE_ERROR(MBED_MODULE_DRIVER_PWM, MBED_ERROR_CODE_FAILED_OPERATION), "cyhal_pwm_start");
     }
+}
+
+int pwmout_read_period_us(pwmout_t *obj)
+{
+    return obj->period_us;
 }
 
 void pwmout_pulsewidth(pwmout_t *obj, float seconds)
@@ -87,9 +92,14 @@ void pwmout_pulsewidth_ms(pwmout_t *obj, int ms)
 void pwmout_pulsewidth_us(pwmout_t *obj, int us)
 {
     obj->width_us = (uint32_t)us;
-    if (CY_RSLT_SUCCESS != cyhal_pwm_period(&(obj->hal_pwm), obj->period_us, obj->width_us)) {
-        MBED_ERROR(MBED_MAKE_ERROR(MBED_MODULE_DRIVER_PWM, MBED_ERROR_CODE_FAILED_OPERATION), "cyhal_pwm_period");
+    if (CY_RSLT_SUCCESS != cyhal_pwm_set_period(&(obj->hal_pwm), obj->period_us, obj->width_us)) {
+        MBED_ERROR(MBED_MAKE_ERROR(MBED_MODULE_DRIVER_PWM, MBED_ERROR_CODE_FAILED_OPERATION), "cyhal_pwm_set_period");
     }
+}
+
+int pwmout_read_pulsewidth_us(pwmout_t *obj)
+{
+    return obj->width_us;
 }
 
 const PinMap *pwmout_pinmap(void)

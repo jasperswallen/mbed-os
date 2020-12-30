@@ -1,5 +1,7 @@
-/* mbed Microcontroller Library
- * Copyright (c) 2017-2018 Nuvoton
+/*
+ * Copyright (c) 2017-2018, Nuvoton Technology Corporation
+ *
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,27 +55,32 @@ void analogin_init(analogin_t *obj, PinName pin)
     MBED_ASSERT(modinit != NULL);
     MBED_ASSERT(modinit->modname == (int) obj->adc);
 
+    obj->pin = pin;
+
+    // Wire pinout
+    pinmap_pinout(pin, PinMap_ADC);
+
     EADC_T *eadc_base = (EADC_T *) NU_MODBASE(obj->adc);
 
     // NOTE: All channels (identified by ADCName) share a ADC module. This reset will also affect other channels of the same ADC module.
     if (! eadc_modinit_mask) {
-        /* Reset module
-         *
-         * NOTE: We must call secure version (from non-secure domain) because SYS/CLK regions are secure.
-         */
-        SYS_ResetModule_S(modinit->rsetidx);
-
         /* Select IP clock source
          *
          * NOTE: We must call secure version (from non-secure domain) because SYS/CLK regions are secure.
          */
         CLK_SetModuleClock_S(modinit->clkidx, modinit->clksrc, modinit->clkdiv);
-        
+
         /* Enable IP clock
          *
          * NOTE: We must call secure version (from non-secure domain) because SYS/CLK regions are secure.
          */
         CLK_EnableModuleClock_S(modinit->clkidx);
+
+        /* Reset module
+         *
+         * NOTE: We must call secure version (from non-secure domain) because SYS/CLK regions are secure.
+         */
+        SYS_ResetModule_S(modinit->rsetidx);
 
         // Set the ADC internal sampling time, input mode as single-end and enable the A/D converter
         EADC_Open(eadc_base, EADC_CTL_DIFFEN_SINGLE_END);
@@ -81,13 +88,44 @@ void analogin_init(analogin_t *obj, PinName pin)
 
     uint32_t chn =  NU_MODSUBINDEX(obj->adc);
 
-    // Wire pinout
-    pinmap_pinout(pin, PinMap_ADC);
-
     // Configure the sample module Nmod for analog input channel Nch and software trigger source
     EADC_ConfigSampleModule(eadc_base, chn, EADC_SOFTWARE_TRIGGER, chn);
 
     eadc_modinit_mask |= 1 << chn;
+}
+
+void analogin_free(analogin_t *obj)
+{
+    const struct nu_modinit_s *modinit = get_modinit(obj->adc, adc_modinit_tab);
+    MBED_ASSERT(modinit->modname == (int) obj->adc);
+
+    /* Module subindex (aka channel) */
+    uint32_t chn =  NU_MODSUBINDEX(obj->adc);
+
+    EADC_T *eadc_base = (EADC_T *) NU_MODBASE(obj->adc);
+
+    /* Channel-level windup from here */
+
+    /* Mark channel free */
+    eadc_modinit_mask &= ~(1 << chn);
+
+    /* Module-level windup from here */
+
+    /* See analogin_init() for reason */
+    if (! eadc_modinit_mask) {
+        /* Disable EADC module */
+        EADC_Close(eadc_base);
+
+        /* Disable IP clock
+         *
+         * NOTE: We must call secure version (from non-secure domain) because SYS/CLK regions are secure.
+         */
+        CLK_DisableModuleClock_S(modinit->clkidx);
+    }
+    
+    /* Free up pins */
+    gpio_set(obj->pin);
+    obj->pin = NC;
 }
 
 uint16_t analogin_read_u16(analogin_t *obj)

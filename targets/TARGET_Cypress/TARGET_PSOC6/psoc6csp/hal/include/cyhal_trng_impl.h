@@ -6,7 +6,7 @@
 *
 ********************************************************************************
 * \copyright
-* Copyright 2018-2019 Cypress Semiconductor Corporation
+* Copyright 2018-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,6 +38,7 @@ extern "C" {
 
 #define MAX_TRNG_BIT_SIZE               (32UL)
 
+// This helper function mirrors the definition of cyhal_trng_generate
 static inline uint32_t cyhal_trng_generate_internal(const cyhal_trng_t *obj)
 {
     CY_ASSERT(NULL != obj);

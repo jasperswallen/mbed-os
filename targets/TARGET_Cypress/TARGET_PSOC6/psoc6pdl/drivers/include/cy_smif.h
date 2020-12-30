@@ -1,6 +1,6 @@
 /***************************************************************************//**
 * \file cy_smif.h
-* \version 1.30
+* \version 1.50.1
 *
 * Provides an API declaration of the Cypress SMIF driver.
 *
@@ -25,20 +25,21 @@
 /**
 * \addtogroup group_smif
 * \{
-* The SPI-based communication interface for external memory devices.
+* The SPI-based communication interface to the external quad SPI (QSPI) 
+* high-speed memory devices.
 *
 * The functions and other declarations used in this driver are in cy_smif.h and 
 * cy_smif_memslot.h (if used). If you are using the ModusToolbox QSPI Configurator, 
 * also include cycfg_qspi_memslot.h. 
 *
-* SMIF: Serial Memory Interface: This IP block implements an SPI-based
-* communication interface for interfacing external memory devices to PSoC. The SMIF
-* supports Octal-SPI, Dual Quad-SPI, Quad-SPI, Dual-SPI, and SPI.
-*
+* **SMIF: Serial Memory Interface**: This IP block implements an SPI-based
+* communication interface for interfacing external memory devices to PSoC.
+* The SMIF supports SPI, dual SPI (DSPI), quad SPI (QSPI), dual QSPI and octal SPI.
+* 
 * Features
 *   - Standard SPI Master interface
-*   - Supports Single/Dual/Quad/Octal SPI Memories
-*   - Supports Dual-Quad SPI mode
+*   - Supports single/dual/quad/octal SPI memory devices
+*   - Supports dual quad SPI mode
 *   - Design-time configurable support for multiple (up to 4) external serial
 *   memory devices
 *   - eXecute-In-Place (XIP) operation mode for both read and write accesses
@@ -63,7 +64,7 @@
 * The memory slot API has functions to implement the basic memory operations such as 
 * program, read, erase etc. These functions are implemented using the memory 
 * parameters in the memory device configuration data structure. The 
-* Cy_SMIF_Memslot_Init() API initializes all the memory slots based on the settings
+* Cy_SMIF_MemInit() API initializes all the memory slots based on the settings
 * in the array.
 *
 * \image html smif_1_0_p01_layers.png
@@ -73,7 +74,7 @@
 * (e.g. for PDL 3.0.0 and Windows OS PDL/3.0.0/tools/win/SMIFConfigurationTool). 
 * 
 * In ModusToolbox this tool is called QSPI Configurator. QSPI Configurator is a part of 
-* PSoC 6 Software Library and can be found in \<ModusToolbox\>/tools/qspi-configurator-1.0
+* PSoC 6 Software Library and can be found in \<ModusToolbox\>/tools/qspi-configurator-1.1
 *  
 * Tool generates *.c and *.h file with configuration structures. These configuration
 * structures are input parameters for cy_smif_memslot API level
@@ -86,30 +87,30 @@
 *
 * For the Write operation, check that the SMIF driver has completed 
 * transferring by calling Cy_SMIF_BusyCheck(). Also, check that the memory is 
-* available with Cy_SMIF_Memslot_IsBusy() before proceeding. 
+* available with Cy_SMIF_MemIsBusy() before proceeding. 
 *
 * Simple example of external flash memory programming using low level SMIF API.
 * All steps mentioned in example below are incorporated in
-* \ref Cy_SMIF_Memslot_CmdWriteEnable(), \ref Cy_SMIF_Memslot_CmdProgram(), and
-* \ref Cy_SMIF_Memslot_IsBusy() of the
+* \ref Cy_SMIF_MemCmdWriteEnable(), \ref Cy_SMIF_MemCmdProgram(), and
+* \ref Cy_SMIF_MemIsBusy() of the
 * \ref group_smif_mem_slot_functions "memory slot level API".
 * \warning Example is simplified, without checks of error conditions.
 * \note Flash memories need erase operation before programming. Refer to
 * external memory datasheet for specific memory commands.
 *
-* \snippet smif/smif_sut_01.cydsn/main_cm4.c SMIF_API: Write example
+* \snippet smif/snippet/main.c SMIF_API: Write example
 *
 * For the Read operation, before accessing the read buffer, check that it is ready
 * by calling Cy_SMIF_GetTxFifoStatus().
 *
 * Simple example of external flash memory read using low level SMIF API. All
 * steps mentioned in example below are incorporated in
-* \ref Cy_SMIF_Memslot_CmdRead() of the
+* \ref Cy_SMIF_MemCmdRead() of the
 * \ref group_smif_mem_slot_functions "memory slot level API".
 * \warning Example is simplified, without checks of error conditions.
 * \note Refer to external memory datasheet for specific memory commands.
 *
-* \snippet smif/smif_sut_01.cydsn/main_cm4.c SMIF_API: Read example
+* \snippet smif/snippet/main.c SMIF_API: Read example
 *
 * The user should invalidate the cache by calling Cy_SMIF_CacheInvalidate() when 
 * switching from the MMIO mode to XIP mode.
@@ -119,15 +120,15 @@
 * PDL API has common parameters: base, context, config described in
 * \ref page_getting_started_pdl_design "PDL Design" section.
 *
-* See the documentation for Cy_SMIF_Init() and Cy_SMIF_Memslot_Init() for details
+* See the documentation for Cy_SMIF_Init() and Cy_SMIF_MemInit() for details
 * on the required configuration structures and other initialization topics. 
 *
-* The normal (MMIO) mode is used for implementing a generic SPI/DSPI/QSPI/Dual
-* Quad-SPI/Octal-SPI communication interface using the SMIF block. This
+* The normal (MMIO) mode is used for implementing a generic SPI/DSPI/QSPI/dual
+* QSPI/octal SPI communication interface using the SMIF block. This
 * interface can be used to implement special commands like Program/Erase of
 * flash, memory device configuration, sleep mode entry for memory devices or
 * other special commands specific to the memory device. The transfer width
-* (SPI/DSP/Quad-SPI/Octal-SPI) of a transmission is a parameter set for each
+* (SPI/DSPI/QSPI/octal SPI) of a transmission is a parameter set for each
 * transmit/receive operation. So these can be changed at run time.
 *
 * In a typical memory interface with flash memory, the SMIF is used in the
@@ -142,12 +143,12 @@
 * \subsection group_smif_init SMIF Initialization
 * Create interrupt function and allocate memory for SMIF context
 * structure
-* \snippet smif/smif_sut_01.cydsn/main_cm4.c SMIF_INIT: context and interrupt
+* \snippet smif/snippet/main.c SMIF_INIT: context and interrupt
 * SMIF driver initialization for low level API usage (cysmif.h)
-* \snippet smif/smif_sut_01.cydsn/main_cm4.c SMIF_INIT: low level
+* \snippet smif/snippet/main.c SMIF_INIT: low level
 * Additional steps to initialize SMIF driver for memory slot level API usage
 * (cy_smif_memslot.h).
-* \snippet smif/smif_sut_01.cydsn/main_cm4.c SMIF_INIT: memslot level
+* \snippet smif/snippet/main.c SMIF_INIT: memslot level
 * \note Example does not include initialization of all needed configuration
 * structures (\ref cy_stc_smif_mem_device_cfg_t, \ref cy_stc_smif_mem_cmd_t).
 * SMIF/QSPI Configuration tool generates all configuration structures needed for
@@ -159,8 +160,10 @@
 * function calls. In this mode the SMIF block maps the AHB bus-accesses to 
 * external memory device addresses to make it behave similar to internal memory. 
 * This allows the CPU to execute code directly from external memory. This mode 
-* is not limited to code and is suitable also for data read and write accesses. 
-* \snippet smif/smif_sut_01.cydsn/main_cm4.c SMIF_INIT: XIP
+* is not limited to code and is suitable also for data read and write accesses.
+* The memory regions available for XIP addresses allocation are defined
+* in a linker script file (.ld).
+* \snippet smif/snippet/main.c SMIF_INIT: XIP
 * \note Example of input parameters initialization is in \ref group_smif_init 
 * section.
 * \warning Functions that called from external memory should be declared with 
@@ -211,6 +214,104 @@
 * <table class="doxtable">
 *   <tr><th>Version</th><th>Changes</th><th>Reason for Change</th></tr>
 *   <tr>
+*     <td>1.50.1</td>
+*     <td>Minor documentation updates. </td>
+*     <td>Documentation improvement. </td>
+*   </tr>
+*   <tr>
+*     <td>1.50</td>
+*     <td>Added a new function: \ref Cy_SMIF_MemLocateHybridRegion.\n
+*     Added a new structure \ref cy_stc_smif_hybrid_region_info_t.\n
+*     Updated the \ref Cy_SMIF_MemEraseSector and \ref Cy_SMIF_MemCmdSectorErase functions.\n
+*     Updated the \ref Cy_SMIF_MemSfdpDetect function. \n
+*     Updated the \ref cy_stc_smif_mem_device_cfg_t structure.</td>
+*     <td>Support for memories with hybrid regions.</td>
+*   </tr>
+*   <tr>
+*     <td rowspan="2">1.40.1</td>
+*     <td>The \ref Cy_SMIF_MemInit is changed. </td>
+*     <td>Corrected a false assertion during initialization in SFDP mode.</td>
+*   </tr>
+*   <tr>
+*     <td>Minor documentation updates. </td>
+*     <td></td>
+*   </tr>
+*   <tr>
+*     <td rowspan="5">1.40</td>
+*     <td>The following functions are renamed:\n
+*        Cy_SMIF_GetTxfrStatus into Cy_SMIF_GetTransferStatus;\n
+*        Cy_SMIF_Memslot_Init into Cy_SMIF_MemInit;\n
+*        Cy_SMIF_Memslot_DeInit into Cy_SMIF_MemDeInit;\n
+*        Cy_SMIF_Memslot_CmdWriteEnable into Cy_SMIF_MemCmdWriteEnable;\n
+*        Cy_SMIF_Memslot_CmdWriteDisable into Cy_SMIF_MemCmdWriteDisable;\n
+*        Cy_SMIF_Memslot_IsBusy into Cy_SMIF_MemIsBusy;\n
+*        Cy_SMIF_Memslot_QuadEnable into Cy_SMIF_MemQuadEnable;\n
+*        Cy_SMIF_Memslot_CmdReadSts into Cy_SMIF_MemCmdReadStatus;\n
+*        Cy_SMIF_Memslot_CmdWriteSts into Cy_SMIF_MemCmdWriteStatus;\n
+*        Cy_SMIF_Memslot_CmdChipErase into Cy_SMIF_MemCmdChipErase;\n
+*        Cy_SMIF_Memslot_CmdSectorErase into Cy_SMIF_MemCmdSectorErase;\n
+*        Cy_SMIF_Memslot_SfdpDetect into Cy_SMIF_MemSfdpDetect;\n
+*        Cy_SMIF_Memslot_CmdProgram into Cy_SMIF_MemCmdProgram;\n
+*        Cy_SMIF_Memslot_CmdRead into Cy_SMIF_MemCmdRead.\n
+*          The following ENUMa are renamed:\n
+*        CY_SMIF_SEND_CMPLT into CY_SMIF_SEND_COMPLETE;\n
+*        CY_SMIF_REC_CMPLT into CY_SMIF_RX_COMPLETE;\n
+*        CY_SMIF_REC_BUSY into CY_SMIF_RX_BUSY;\n
+*        CY_SMIF_SEL_INV_INTERNAL_CLK into CY_SMIF_SEL_INVERTED_INTERNAL_CLK;\n
+*        CY_SMIF_SEL_INV_FEEDBACK_CLK into CY_SMIF_SEL_INVERTED_FEEDBACK_CLK;\n
+*        cy_en_smif_cache_en_t into cy_en_smif_cache_t.\n
+*          The following MACROs are renamed:\n
+*        CY_SMIF_FLAG_WR_EN into CY_SMIF_FLAG_WRITE_ENABLE;\n
+*        CY_SMIF_FLAG_CRYPTO_EN into CY_SMIF_FLAG_CRYPTO_ENABLE;\n
+*        CY_SMIF_SFDP_SING_BYTE_00 into CY_SMIF_SFDP_SIGNATURE_BYTE_00;\n
+*        CY_SMIF_SFDP_SING_BYTE_01 into CY_SMIF_SFDP_SIGNATURE_BYTE_01;\n
+*        CY_SMIF_SFDP_SING_BYTE_02 into CY_SMIF_SFDP_SIGNATURE_BYTE_02;\n
+*        CY_SMIF_SFDP_SING_BYTE_03 into CY_SMIF_SFDP_SIGNATURE_BYTE_03;\n
+*        CY_SMIF_WR_STS_REG1_CMD into CY_SMIF_WRITE_STATUS_REG1_CMD;\n
+*        CY_SMIF_WR_DISABLE_CMD into CY_SMIF_WRITE_DISABLE_CMD;\n
+*        CY_SMIF_RD_STS_REG1_CMD into CY_SMIF_READ_STATUS_REG1_CMD;\n
+*        CY_SMIF_WR_ENABLE_CMD into CY_SMIF_WRITE_ENABLE_CMD;\n
+*        CY_SMIF_RD_STS_REG2_T1_CMD into CY_SMIF_READ_STATUS_REG2_T1_CMD;\n          
+*        CY_SMIF_WR_STS_REG2_CMD into CY_SMIF_WRITE_STATUS_REG2_CMD;\n
+*        CY_SMIF_RD_STS_REG2_T2_CMD into CY_SMIF_READ_STATUS_REG2_T2_CMD;\n
+*        CY_SMIF_QE_BIT_STS_REG2_T1 into CY_SMIF_QE_BIT_STATUS_REG2_T1;\n
+*        CY_SMIF_STS_REG_BUSY_MASK into CY_SMIF_STATUS_REG_BUSY_MASK.\n
+*      </td>
+*      <td rowspan="2">Documentation improvement.</td>
+*   </tr>
+*   <tr>
+*     <td>Updated the description of the Cy_SMIF_MemInit() function.
+*         Updated the Cy_SMIF_Encrypt() function usage example.
+*     </td>
+*   </tr>
+*   <tr>
+*     <td>The type of arguments that are not modified by the functions are set to const.
+*     </td>
+*     <td>Usability improvement.
+*     </td>
+*   </tr>
+*   <tr>
+*     <td>The Cy_SMIF_MemSfdpDetect() function is updated to support new 
+*         commands for 4 bytes addressing.
+*     </td>
+*     <td>Memory devices with new 4 byte addressing commands support.
+*     </td>
+*   </tr>
+*   <tr>
+*     <td>Added the blocking functions which take care of the 
+*         busy-status check of the memory:
+*         - \ref  Cy_SMIF_MemIsReady
+*         - \ref  Cy_SMIF_MemIsQuadEnabled
+*         - \ref  Cy_SMIF_MemEnableQuadMode
+*         - \ref  Cy_SMIF_MemRead
+*         - \ref  Cy_SMIF_MemWrite
+*         - \ref  Cy_SMIF_MemEraseSector
+*         - \ref  Cy_SMIF_MemEraseChip
+*     </td>
+*     <td>Added new high-level blocking functions.
+*     </td>
+*   </tr>
+*   <tr>
 *     <td rowspan="5">1.30</td>
 *     <td>The CY_SMIF_CMD_FIFO_WR_RX_COUNT_Msk value is changed to 0x0000FFFFUL.</td>
 *     <td rowspan="4">Driver maintenance.</td>
@@ -227,7 +328,7 @@
 *   <tr>
 *     <td>Updated the General Description section with minor changes.
 *         Updated the ordering of the parameters descriptions for some functions.
-*         Added the text saying that the Cy_SMIF_Memslot_Init() function is applicable 
+*         Added the text saying that the Cy_SMIF_MemInit() function is applicable 
 *      to use the external memory as memory-mapped to PSoC (XIP mode).
 *         Added the snippet for the Cy_SMIF_Encrypt() function to show how to use this function.
 *         Added below the picture in the Low-Level Functions section the sequence of PDL
@@ -302,17 +403,17 @@
 * \{
 * \defgroup group_smif_low_level_functions Low Level Functions
 * \{
-* Basic flow for read/write commands using \ref Cy_SMIF_TransmitCommand
-* \ref Cy_SMIF_TransmitData \ref Cy_SMIF_ReceiveData
+* Basic flow for read/write commands using \ref Cy_SMIF_TransmitCommand, 
+* \ref Cy_SMIF_TransmitData, \ref Cy_SMIF_ReceiveData and 
 * \ref Cy_SMIF_SendDummyCycles
 *
 *  \image html smif_1_0_p03_rw_cmd.png
 *
 * The sequence of the PDL functions required in a read or write transaction is:
-* Cy_SMIF_TransmitCommand() -> 
-* Cy_SMIF_SendDummyCycles() -> 
-* Cy_SMIF_ReceiveData()/Cy_SMIF_TransmitData() -> 
-* Cy_SMIF_BusyCheck().
+* \ref Cy_SMIF_TransmitCommand() -> 
+* \ref Cy_SMIF_SendDummyCycles() -> 
+* \ref Cy_SMIF_ReceiveData() / \ref Cy_SMIF_TransmitData() -> 
+* \ref Cy_SMIF_BusyCheck().
 * The address is sent as part of the Cy_SMIF_TransmitCommand() function. 
 * No separate function call is required. 
 *
@@ -363,7 +464,7 @@ extern "C" {
 #define CY_SMIF_DRV_VERSION_MAJOR       1
 
 /** The driver minor version */
-#define CY_SMIF_DRV_VERSION_MINOR       30
+#define CY_SMIF_DRV_VERSION_MINOR       50
 
 /** One microsecond timeout for Cy_SMIF_TimeoutRun() */
 #define CY_SMIF_WAIT_1_UNIT             (1U)
@@ -440,9 +541,9 @@ extern "C" {
 #define CY_SMIF_BLOCK_EVENT_VALID(event)    ((CY_SMIF_BUS_ERROR == (cy_en_smif_error_event_t)(event)) || \
                                              (CY_SMIF_WAIT_STATES == (cy_en_smif_error_event_t)(event)))
 #define CY_SMIF_CLOCK_SEL_VALID(clkSel)     ((CY_SMIF_SEL_INTERNAL_CLK == (cy_en_smif_clk_select_t)(clkSel)) || \
-                                             (CY_SMIF_SEL_INV_INTERNAL_CLK == (cy_en_smif_clk_select_t)(clkSel)) || \
+                                             (CY_SMIF_SEL_INVERTED_INTERNAL_CLK == (cy_en_smif_clk_select_t)(clkSel)) || \
                                              (CY_SMIF_SEL_FEEDBACK_CLK == (cy_en_smif_clk_select_t)(clkSel)) || \
-                                             (CY_SMIF_SEL_INV_FEEDBACK_CLK == (cy_en_smif_clk_select_t)(clkSel)))
+                                             (CY_SMIF_SEL_INVERTED_FEEDBACK_CLK == (cy_en_smif_clk_select_t)(clkSel)))
                                              
 #define CY_SMIF_DESELECT_DELAY_VALID(delay) ((delay) <= CY_SMIF_MAX_DESELECT_DELAY)
 #define CY_SMIF_SLAVE_SEL_VALID(ss)         ((CY_SMIF_SLAVE_SELECT_0 == (ss)) || \
@@ -514,7 +615,7 @@ extern "C" {
 /** The Transfer width options for the command, data, the address and the mode. */
 typedef enum
 {
-    CY_SMIF_WIDTH_SINGLE   = 0U,    /**< Normal SPI mode. */
+    CY_SMIF_WIDTH_SINGLE   = 0U,    /**< Single SPI mode. */
     CY_SMIF_WIDTH_DUAL     = 1U,    /**< Dual SPI mode. */
     CY_SMIF_WIDTH_QUAD     = 2U,    /**< Quad SPI mode. */
     CY_SMIF_WIDTH_OCTAL    = 3U,    /**< Octal SPI mode. */
@@ -537,7 +638,7 @@ typedef enum
 {
     /**
     * smif.spi_data[0] = DATA0, smif.spi_data[1] = DATA1, ..., smif.spi_data[7] = DATA7.
-    * This value is allowed for the SPI, DSPI, quad-SPI, dual quad-SPI, and octal-SPI modes.
+    * This value is allowed for the SPI, DSPI, QSPI, dual QSPI, and octal SPI modes.
     */
     CY_SMIF_DATA_SEL0      = 0,
     /**
@@ -547,7 +648,7 @@ typedef enum
     CY_SMIF_DATA_SEL1      = 1,
     /**
     * smif.spi_data[4] = DATA0, smif.spi_data[5] = DATA1, ..., smif.spi_data[7] = DATA3.
-    * This value is only allowed for the SPI, DSPI, quad-SPI and dual quad-SPI modes.
+    * This value is only allowed for the SPI, DSPI, QSPI and dual QSPI modes.
     */
     CY_SMIF_DATA_SEL2      = 2,
     /**
@@ -568,10 +669,10 @@ typedef enum
 typedef enum
 {
     CY_SMIF_STARTED,       /**< The SMIF started. */
-    CY_SMIF_SEND_CMPLT,    /**< The data transmission is complete. */
+    CY_SMIF_SEND_COMPLETE, /**< The data transmission is complete. */
     CY_SMIF_SEND_BUSY,     /**< The data transmission is in progress. */
-    CY_SMIF_REC_CMPLT,     /**< The data reception is completed. */
-    CY_SMIF_REC_BUSY,      /**< The data reception is in progress. */
+    CY_SMIF_RX_COMPLETE,   /**< The data reception is completed. */
+    CY_SMIF_RX_BUSY,       /**< The data reception is in progress. */
     CY_SMIF_XIP_ERROR,     /**< An XIP alignment error. */
     CY_SMIF_CMD_ERROR,     /**< A TX CMD FIFO overflow. */
     CY_SMIF_TX_ERROR,      /**< A TX DATA FIFO overflow. */
@@ -592,6 +693,8 @@ typedef enum
     CY_SMIF_NO_QE_BIT       = CY_SMIF_ID |CY_PDL_STATUS_ERROR | 0x03U,
     CY_SMIF_BAD_PARAM       = CY_SMIF_ID |CY_PDL_STATUS_ERROR | 0x04U,   /**< The SMIF API received the wrong parameter */
     CY_SMIF_NO_SFDP_SUPPORT = CY_SMIF_ID |CY_PDL_STATUS_ERROR | 0x05U,   /**< The external memory does not support SFDP (JESD216B). */
+    CY_SMIF_NOT_HYBRID_MEM  = CY_SMIF_ID |CY_PDL_STATUS_ERROR | 0x06U,   /**< The external memory is not hybrid */
+    CY_SMIF_SFDP_CORRUPTED_TABLE = CY_SMIF_ID |CY_PDL_STATUS_ERROR | 0x07U, /**< The SFDP table is corrupted */
     /** Failed to initialize the slave select 0 external memory by auto detection (SFDP). */
     CY_SMIF_SFDP_SS0_FAILED = CY_SMIF_ID |CY_PDL_STATUS_ERROR |
                             ((uint32_t)CY_SMIF_SFDP_FAIL << CY_SMIF_SFDP_FAIL_SS0_POS),
@@ -623,9 +726,9 @@ typedef enum
 typedef enum
 {
    CY_SMIF_SEL_INTERNAL_CLK     = 0U,  /**< The SMIF internal clock */
-   CY_SMIF_SEL_INV_INTERNAL_CLK = 1U,  /**< The SMIF internal inverted clock */
+   CY_SMIF_SEL_INVERTED_INTERNAL_CLK = 1U,  /**< The SMIF internal inverted clock */
    CY_SMIF_SEL_FEEDBACK_CLK     = 2U,  /**< The SMIF feedback clock */
-   CY_SMIF_SEL_INV_FEEDBACK_CLK = 3U   /**< The SMIF feedback inverted clock */
+   CY_SMIF_SEL_INVERTED_FEEDBACK_CLK = 3U   /**< The SMIF feedback inverted clock */
 } cy_en_smif_clk_select_t;
 
 /** Specifies enabled type of SMIF cache. */
@@ -634,7 +737,23 @@ typedef enum
     CY_SMIF_CACHE_SLOW      = 1U,   /**< The SMIF slow cache (in the clk_slow domain) see TRM for details */
     CY_SMIF_CACHE_FAST      = 2U,   /**< The SMIF fast cache  (in the clk_fast domain) see TRM for details */
     CY_SMIF_CACHE_BOTH      = 3U    /**< The SMIF both caches */
-} cy_en_smif_cache_en_t;
+} cy_en_smif_cache_t;
+
+/** \cond INTERNAL */
+/*******************************************************************************
+* These are legacy macros. They are left here just for backward compatibility.
+* Do not use them in new designs.
+*******************************************************************************/
+
+#define CY_SMIF_SEND_CMPLT                          CY_SMIF_SEND_COMPLETE
+#define CY_SMIF_REC_CMPLT                           CY_SMIF_RX_COMPLETE
+#define CY_SMIF_REC_BUSY                            CY_SMIF_RX_BUSY
+#define CY_SMIF_SEL_INV_INTERNAL_CLK                CY_SMIF_SEL_INVERTED_INTERNAL_CLK
+#define CY_SMIF_SEL_INV_FEEDBACK_CLK                CY_SMIF_SEL_INVERTED_FEEDBACK_CLK
+#define cy_en_smif_cache_en_t                       cy_en_smif_cache_t
+#define Cy_SMIF_GetTxfrStatus                       Cy_SMIF_GetTransferStatus
+
+/** \endcond*/
 
 /** \} group_smif_enums */
 
@@ -678,7 +797,7 @@ typedef struct
 /** The SMIF internal context data. The user must not modify it. */
 typedef struct
 {
-    uint8_t volatile * volatile txBufferAddress;    /**<  The pointer to the data to transfer */
+    uint8_t const volatile * volatile txBufferAddress;    /**<  The pointer to the data to transfer */
     uint32_t txBufferSize;                          /**<  The size of the data to transmit in bytes */
     /**
     * The transfer counter. The number of the transmitted bytes = txBufferSize - txBufferCounter
@@ -694,8 +813,8 @@ typedef struct
     * The status of the transfer. The transmitting / receiving is completed / in progress
     */
     uint32_t volatile transferStatus;
-    cy_smif_event_cb_t volatile txCmpltCb;          /**< The user-defined callback executed at the completion of a transmission */
-    cy_smif_event_cb_t volatile rxCmpltCb;          /**< The user-defined callback executed at the completion of a reception */
+    cy_smif_event_cb_t volatile txCompleteCb;          /**< The user-defined callback executed at the completion of a transmission */
+    cy_smif_event_cb_t volatile rxCompleteCb;          /**< The user-defined callback executed at the completion of a reception */
     /**
     * The timeout in microseconds for the blocking functions. This timeout value applies to all blocking APIs.
     */
@@ -723,22 +842,22 @@ cy_en_smif_status_t Cy_SMIF_TransmitCommand(SMIF_Type *base,
                                 cy_en_smif_txfr_width_t cmdTxfrWidth,
                                 uint8_t const cmdParam[], uint32_t paramSize,
                                 cy_en_smif_txfr_width_t paramTxfrWidth,
-                                cy_en_smif_slave_select_t slaveSelect, uint32_t cmpltTxfr,
+                                cy_en_smif_slave_select_t slaveSelect, uint32_t completeTxfr,
                                 cy_stc_smif_context_t const *context);
 cy_en_smif_status_t Cy_SMIF_TransmitData(SMIF_Type *base,
-                                uint8_t *txBuffer, uint32_t size,
+                                uint8_t const *txBuffer, uint32_t size,
                                 cy_en_smif_txfr_width_t transferWidth,
-                                cy_smif_event_cb_t TxCmpltCb,
+                                cy_smif_event_cb_t TxCompleteCb,
                                 cy_stc_smif_context_t *context);
 cy_en_smif_status_t  Cy_SMIF_TransmitDataBlocking(SMIF_Type *base,
-                                uint8_t *txBuffer,
+                                uint8_t const *txBuffer,
                                 uint32_t size,
                                 cy_en_smif_txfr_width_t transferWidth,
                                 cy_stc_smif_context_t const *context);
 cy_en_smif_status_t Cy_SMIF_ReceiveData(SMIF_Type *base,
                                 uint8_t *rxBuffer, uint32_t size,
                                 cy_en_smif_txfr_width_t transferWidth,
-                                cy_smif_event_cb_t RxCmpltCb,
+                                cy_smif_event_cb_t RxCompleteCb,
                                 cy_stc_smif_context_t *context);
 cy_en_smif_status_t  Cy_SMIF_ReceiveDataBlocking(SMIF_Type *base,
                                 uint8_t *rxBuffer,
@@ -746,7 +865,7 @@ cy_en_smif_status_t  Cy_SMIF_ReceiveDataBlocking(SMIF_Type *base,
                                 cy_en_smif_txfr_width_t transferWidth,
                                 cy_stc_smif_context_t const *context);
 cy_en_smif_status_t Cy_SMIF_SendDummyCycles(SMIF_Type *base, uint32_t cycles);
-uint32_t Cy_SMIF_GetTxfrStatus(SMIF_Type *base, cy_stc_smif_context_t const *context);
+uint32_t Cy_SMIF_GetTransferStatus(SMIF_Type const *base, cy_stc_smif_context_t const *context);
 void Cy_SMIF_Enable(SMIF_Type *base, cy_stc_smif_context_t *context);
 __STATIC_INLINE void Cy_SMIF_Disable(SMIF_Type *base);
 __STATIC_INLINE void  Cy_SMIF_SetInterruptMask(SMIF_Type *base, uint32_t interrupt);
@@ -767,11 +886,11 @@ cy_en_smif_status_t  Cy_SMIF_Encrypt(SMIF_Type *base,
                                 cy_stc_smif_context_t const *context);
 __STATIC_INLINE bool Cy_SMIF_BusyCheck(SMIF_Type const *base);
 __STATIC_INLINE void Cy_SMIF_Interrupt(SMIF_Type *base, cy_stc_smif_context_t *context);
-cy_en_smif_status_t Cy_SMIF_CacheEnable(SMIF_Type *base, cy_en_smif_cache_en_t cacheType);
-cy_en_smif_status_t Cy_SMIF_CacheDisable(SMIF_Type *base, cy_en_smif_cache_en_t cacheType);
-cy_en_smif_status_t Cy_SMIF_CachePrefetchingEnable(SMIF_Type *base, cy_en_smif_cache_en_t cacheType);
-cy_en_smif_status_t Cy_SMIF_CachePrefetchingDisable(SMIF_Type *base, cy_en_smif_cache_en_t cacheType);
-cy_en_smif_status_t Cy_SMIF_CacheInvalidate(SMIF_Type *base, cy_en_smif_cache_en_t cacheType);
+cy_en_smif_status_t Cy_SMIF_CacheEnable(SMIF_Type *base, cy_en_smif_cache_t cacheType);
+cy_en_smif_status_t Cy_SMIF_CacheDisable(SMIF_Type *base, cy_en_smif_cache_t cacheType);
+cy_en_smif_status_t Cy_SMIF_CachePrefetchingEnable(SMIF_Type *base, cy_en_smif_cache_t cacheType);
+cy_en_smif_status_t Cy_SMIF_CachePrefetchingDisable(SMIF_Type *base, cy_en_smif_cache_t cacheType);
+cy_en_smif_status_t Cy_SMIF_CacheInvalidate(SMIF_Type *base, cy_en_smif_cache_t cacheType);
 
 /** \addtogroup group_smif_functions_syspm_callback
 * The driver supports SysPm callback for Deep Sleep and Hibernate transition.
@@ -1254,10 +1373,10 @@ __STATIC_INLINE void Cy_SMIF_PushTxFifo(SMIF_Type *baseaddr, cy_stc_smif_context
         /* Disable the TR_TX_REQ interrupt */
         Cy_SMIF_SetInterruptMask(baseaddr, Cy_SMIF_GetInterruptMask(baseaddr) & ~SMIF_INTR_TR_TX_REQ_Msk);
 
-        context->transferStatus = (uint32_t) CY_SMIF_SEND_CMPLT;
-        if (NULL != context->txCmpltCb)
+        context->transferStatus = (uint32_t) CY_SMIF_SEND_COMPLETE;
+        if (NULL != context->txCompleteCb)
         {
-            context->txCmpltCb((uint32_t) CY_SMIF_SEND_CMPLT);
+            context->txCompleteCb((uint32_t) CY_SMIF_SEND_COMPLETE);
         }
     }
 }
@@ -1356,10 +1475,10 @@ __STATIC_INLINE void Cy_SMIF_PopRxFifo(SMIF_Type *baseaddr, cy_stc_smif_context_
     {
         /* Disable the TR_RX_REQ interrupt */
         Cy_SMIF_SetInterruptMask(baseaddr, Cy_SMIF_GetInterruptMask(baseaddr) & ~SMIF_INTR_TR_RX_REQ_Msk);
-        context->transferStatus = (uint32_t) CY_SMIF_REC_CMPLT;
-        if (NULL != context->rxCmpltCb)
+        context->transferStatus = (uint32_t) CY_SMIF_RX_COMPLETE;
+        if (NULL != context->rxCompleteCb)
         {
-            context->rxCmpltCb((uint32_t) CY_SMIF_REC_CMPLT);
+            context->rxCompleteCb((uint32_t) CY_SMIF_RX_COMPLETE);
         }
     }
 

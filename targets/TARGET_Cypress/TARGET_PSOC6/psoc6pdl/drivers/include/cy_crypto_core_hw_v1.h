@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_crypto_core_hw_v1.h
-* \version 2.30
+* \version 2.30.4
 *
 * \brief
 *  This file provides constants and function prototypes
 *  for the Vector Unit functions in the Crypto block driver.
 *
 ********************************************************************************
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,6 +30,10 @@
 #include "cy_crypto_common.h"
 
 #if defined(CY_IP_MXCRYPTO)
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 #include "cy_crypto_core_hw.h"
 
@@ -87,6 +91,10 @@ void Cy_Crypto_Run3ParamInstr(CRYPTO_Type *base, uint8_t instr,
 void Cy_Crypto_Run4ParamInstr(CRYPTO_Type *base, uint8_t instr,
                            uint32_t rdst0Shift, uint32_t rdst1Shift, uint32_t rdst2Shift, uint32_t rdst3Shift);
 
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* CY_IP_MXCRYPTO */
 

@@ -1,5 +1,7 @@
-/* mbed Microcontroller Library
- * Copyright (c) 2015-2017 Nuvoton
+/*
+ * Copyright (c) 2015-2017, Nuvoton Technology Corporation
+ *
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,10 +64,23 @@ void gpio_mode(gpio_t *obj, PinMode mode)
         return;
     }
 
+    uint32_t pin_index = NU_PININDEX(obj->pin);
+    uint32_t port_index = NU_PINPORT(obj->pin);
+    GPIO_T *gpio_base = NU_PORT_BASE(port_index);
+
     switch (mode) {
         case PullNone:
+            if (mode == PullNone) {
+                GPIO_SetPullCtl(gpio_base, 1 << pin_index, GPIO_PUSEL_DISABLE);
+            }
         case PullDown:
+            if (mode == PullDown) {
+                GPIO_SetPullCtl(gpio_base, 1 << pin_index, GPIO_PUSEL_PULL_DOWN);
+            }
         case PullUp:
+            if (mode == PullUp) {
+                GPIO_SetPullCtl(gpio_base, 1 << pin_index, GPIO_PUSEL_PULL_UP);
+            }
             /* H/W doesn't support separate configuration for input pull mode/direction.
              * We translate to input-only/push-pull output I/O mode dependent on direction. */
             obj->mode = (obj->direction == PIN_INPUT) ? InputOnly : PushPullOutput;
@@ -110,10 +125,23 @@ void gpio_dir(gpio_t *obj, PinDirection direction)
 
     obj->direction = direction;
 
+    uint32_t pin_index = NU_PININDEX(obj->pin);
+    uint32_t port_index = NU_PINPORT(obj->pin);
+    GPIO_T *gpio_base = NU_PORT_BASE(port_index);
+
     switch (obj->mode) {
         case PullNone:
+            if (obj->mode == PullNone) {
+                GPIO_SetPullCtl(gpio_base, 1 << pin_index, GPIO_PUSEL_DISABLE);
+            }
         case PullDown:
+            if (obj->mode == PullDown) {
+                GPIO_SetPullCtl(gpio_base, 1 << pin_index, GPIO_PUSEL_PULL_DOWN);
+            }
         case PullUp:
+            if (obj->mode == PullUp) {
+                GPIO_SetPullCtl(gpio_base, 1 << pin_index, GPIO_PUSEL_PULL_UP);
+            }
             /* H/W doesn't support separate configuration for input pull mode/direction.
              * We translate to input-only/push-pull output I/O mode dependent on direction. */
             obj->mode = (obj->direction == PIN_INPUT) ? InputOnly : PushPullOutput;
