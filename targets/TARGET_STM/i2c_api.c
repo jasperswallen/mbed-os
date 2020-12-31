@@ -82,28 +82,58 @@ static I2C_HandleTypeDef *i2c_handles[I2C_NUM];
 #define FLAG_TIMEOUT ((int)0x1000)
 
 #if defined(USE_I2C_DMA)
-#define I2C1_DMA_CLK_ENABLE()           __HAL_RCC_DMA1_CLK_ENABLE()
-#define I2C1_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
+#ifdef TARGET_STM32L4
+    #define I2C1_DMA_CLK_ENABLE()           __HAL_RCC_DMA1_CLK_ENABLE()
+    #define I2C1_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
 
-#define I2C2_DMA_CLK_ENABLE()           __HAL_RCC_DMA1_CLK_ENABLE()
-#define I2C2_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
+    #define I2C2_DMA_CLK_ENABLE()           __HAL_RCC_DMA1_CLK_ENABLE()
+    #define I2C2_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
 
 
-/* Definition for I2C1's DMA */
-#define I2C1_DMA_INSTANCE_TX            DMA1_Channel1
-#define I2C1_DMA_INSTANCE_RX            DMA1_Channel2
-#define I2C1_DMA_TX_IRQn                DMA1_Channel1_IRQn
-#define I2C1_DMA_RX_IRQn                DMA1_Channel2_IRQn
-#define I2C1_DMA_TX_IRQHandler          DMA1_Channel1_IRQHandler
-#define I2C1_DMA_RX_IRQHandler          DMA1_Channel2_IRQHandler
+    /* Definition for I2C1's DMA */
+    #define I2C1_DMA_INSTANCE_TX            DMA1_Channel1
+    #define I2C1_DMA_INSTANCE_RX            DMA1_Channel2
+    #define I2C1_DMA_TX_IRQn                DMA1_Channel1_IRQn
+    #define I2C1_DMA_RX_IRQn                DMA1_Channel2_IRQn
+    #define I2C1_DMA_TX_IRQHandler          DMA1_Channel1_IRQHandler
+    #define I2C1_DMA_RX_IRQHandler          DMA1_Channel2_IRQHandler
 
-/* Definition for I2C2's DMA */
-#define I2C2_DMA_INSTANCE_TX            DMA1_Channel3
-#define I2C2_DMA_INSTANCE_RX            DMA1_Channel4
-#define I2C2_DMA_TX_IRQn                DMA1_Channel3_IRQn
-#define I2C2_DMA_RX_IRQn                DMA1_Channel4_IRQn
-#define I2C2_DMA_TX_IRQHandler          DMA1_Channel3_IRQHandler
-#define I2C2_DMA_RX_IRQHandler          DMA1_Channel4_IRQHandler
+    /* Definition for I2C2's DMA */
+    #define I2C2_DMA_INSTANCE_TX            DMA1_Channel3
+    #define I2C2_DMA_INSTANCE_RX            DMA1_Channel4
+    #define I2C2_DMA_TX_IRQn                DMA1_Channel3_IRQn
+    #define I2C2_DMA_RX_IRQn                DMA1_Channel4_IRQn
+    #define I2C2_DMA_TX_IRQHandler          DMA1_Channel3_IRQHandler
+    #define I2C2_DMA_RX_IRQHandler          DMA1_Channel4_IRQHandler
+
+#endif
+#ifdef TARGET_STM32H7
+    #define I2C1_DMA_CLK_ENABLE()           __HAL_RCC_DMA1_CLK_ENABLE()
+    #define I2C1_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
+
+    #define I2C2_DMA_CLK_ENABLE()           __HAL_RCC_DMA1_CLK_ENABLE()
+    #define I2C2_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
+
+
+    /* Definition for I2C1's DMA */
+    // TODO
+    /*
+    #define I2C1_DMA_INSTANCE_TX            DMA1_Channel1
+    #define I2C1_DMA_INSTANCE_RX            DMA1_Channel2
+    #define I2C1_DMA_TX_IRQn                DMA1_Channel1_IRQn
+    #define I2C1_DMA_RX_IRQn                DMA1_Channel2_IRQn
+    #define I2C1_DMA_TX_IRQHandler          DMA1_Channel1_IRQHandler
+    #define I2C1_DMA_RX_IRQHandler          DMA1_Channel2_IRQHandler
+    */
+
+    /* Definition for I2C2's DMA */
+    #define I2C2_DMA_INSTANCE_TX            DMA1_Stream6
+    #define I2C2_DMA_INSTANCE_RX            DMA1_Stream5
+    #define I2C2_DMA_TX_IRQn                DMA1_Stream6_IRQn
+    #define I2C2_DMA_RX_IRQn                DMA1_Stream5_IRQn
+    #define I2C2_DMA_TX_IRQHandler          DMA1_Stream6_IRQHandler
+    #define I2C2_DMA_RX_IRQHandler          DMA1_Stream5_IRQHandler
+#endif
 
 enum HDMA_INDEX {
     I2C1_TX,

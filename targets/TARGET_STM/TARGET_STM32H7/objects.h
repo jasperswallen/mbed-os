@@ -34,6 +34,9 @@
 extern "C" {
 #endif
 
+#define USE_I2C_DMA
+#define USE_SPI_DMA
+
 struct gpio_irq_s {
     IRQn_Type irq_n;
     uint32_t irq_index;
@@ -64,6 +67,7 @@ struct pwmout_s {
 };
 
 struct spi_s {
+    /* handle must be the 1st element of the structure as we will retrieve the structure from the handle  */
     SPI_HandleTypeDef handle;
     IRQn_Type spiIRQ;
     SPIName spi;
@@ -74,6 +78,10 @@ struct spi_s {
 #if DEVICE_SPI_ASYNCH
     uint32_t event;
     uint8_t transfer_type;
+#endif
+#if defined(USE_SPI_DMA)
+    uint32_t useDMA;
+    uint32_t handler;
 #endif
 };
 
@@ -122,6 +130,9 @@ struct i2c_s {
     uint32_t address;
     uint8_t stop;
     uint8_t available_events;
+#endif
+#if defined(USE_I2C_DMA)
+    uint32_t useDMA;
 #endif
 };
 

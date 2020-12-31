@@ -72,27 +72,56 @@ extern HAL_StatusTypeDef HAL_SPIEx_FlushRxFifo(SPI_HandleTypeDef *hspi);
 #endif
 
 #if defined(USE_SPI_DMA)
-#define SPI1_DMA_CLK_ENABLE()           __HAL_RCC_DMA2_CLK_ENABLE()
-#define SPI1_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
+#ifdef TARGET_STM32L4
+    #define SPI1_DMA_CLK_ENABLE()           __HAL_RCC_DMA2_CLK_ENABLE()
+    #define SPI1_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
 
-#define SPI2_DMA_CLK_ENABLE()           __HAL_RCC_DMA2_CLK_ENABLE()
-#define SPI2_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
+    #define SPI2_DMA_CLK_ENABLE()           __HAL_RCC_DMA2_CLK_ENABLE()
+    #define SPI2_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
 
-/* Definition for SPI1's DMA */
-#define SPI1_DMA_INSTANCE_TX            DMA2_Channel1
-#define SPI1_DMA_INSTANCE_RX            DMA2_Channel2
-#define SPI1_DMA_TX_IRQn                DMA2_Channel1_IRQn
-#define SPI1_DMA_RX_IRQn                DMA2_Channel2_IRQn
-#define SPI1_DMA_TX_IRQHandler          DMA2_Channel1_IRQHandler
-#define SPI1_DMA_RX_IRQHandler          DMA2_Channel2_IRQHandler
+    /* Definition for SPI1's DMA */
+    #define SPI1_DMA_INSTANCE_TX            DMA2_Channel1
+    #define SPI1_DMA_INSTANCE_RX            DMA2_Channel2
+    #define SPI1_DMA_TX_IRQn                DMA2_Channel1_IRQn
+    #define SPI1_DMA_RX_IRQn                DMA2_Channel2_IRQn
+    #define SPI1_DMA_TX_IRQHandler          DMA2_Channel1_IRQHandler
+    #define SPI1_DMA_RX_IRQHandler          DMA2_Channel2_IRQHandler
 
-/* Definition for SPI2's DMA */
-#define SPI2_DMA_INSTANCE_TX            DMA2_Channel3
-#define SPI2_DMA_INSTANCE_RX            DMA2_Channel4
-#define SPI2_DMA_TX_IRQn                DMA2_Channel3_IRQn
-#define SPI2_DMA_RX_IRQn                DMA2_Channel4_IRQn
-#define SPI2_DMA_TX_IRQHandler          DMA2_Channel3_IRQHandler
-#define SPI2_DMA_RX_IRQHandler          DMA2_Channel4_IRQHandler
+    /* Definition for SPI2's DMA */
+    #define SPI2_DMA_INSTANCE_TX            DMA2_Channel3
+    #define SPI2_DMA_INSTANCE_RX            DMA2_Channel4
+    #define SPI2_DMA_TX_IRQn                DMA2_Channel3_IRQn
+    #define SPI2_DMA_RX_IRQn                DMA2_Channel4_IRQn
+    #define SPI2_DMA_TX_IRQHandler          DMA2_Channel3_IRQHandler
+    #define SPI2_DMA_RX_IRQHandler          DMA2_Channel4_IRQHandler
+#endif
+#ifdef TARGET_STM32H7
+    #define SPI1_DMA_CLK_ENABLE()           __HAL_RCC_DMA2_CLK_ENABLE()
+    #define SPI1_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
+
+    #define SPI2_DMA_CLK_ENABLE()           __HAL_RCC_DMA2_CLK_ENABLE()
+    #define SPI2_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
+
+    /* Definition for SPI1's DMA */
+    #define SPI1_DMA_INSTANCE_TX            DMA2_Stream3
+    #define SPI1_DMA_INSTANCE_RX            DMA2_Stream2
+    #define SPI1_DMA_TX_IRQn                DMA2_Stream3_IRQn
+    #define SPI1_DMA_RX_IRQn                DMA2_Stream2_IRQn
+    #define SPI1_DMA_TX_IRQHandler          DMA2_Stream3_IRQHandler
+    #define SPI1_DMA_RX_IRQHandler          DMA2_Stream2_IRQHandler
+
+    /* Definition for SPI2's DMA */
+    // TODO
+    /*
+    #define SPI2_DMA_INSTANCE_TX            DMA2_Channel3
+    #define SPI2_DMA_INSTANCE_RX            DMA2_Channel4
+    #define SPI2_DMA_TX_IRQn                DMA2_Channel3_IRQn
+    #define SPI2_DMA_RX_IRQn                DMA2_Channel4_IRQn
+    #define SPI2_DMA_TX_IRQHandler          DMA2_Channel3_IRQHandler
+    #define SPI2_DMA_RX_IRQHandler          DMA2_Channel4_IRQHandler
+    */
+
+#endif
 
 enum HDMA_SPI_INDEX {
     SPI1_TX,
@@ -333,7 +362,7 @@ static void _spi_init_direct(spi_t *obj, const spi_pinmap_t *pinmap)
         __HAL_RCC_SPI2_CLK_ENABLE();
         spiobj->spiIRQ = SPI2_IRQn;
 
-#if defined(USE_SPI_DMA)
+#if defined(USE_SPI_DMA) && defined(TARGET_STM32L4)
         /* Initialise DMA for SPI */
         spiobj->useDMA = 1;
 
