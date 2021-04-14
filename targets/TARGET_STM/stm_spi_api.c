@@ -97,7 +97,7 @@ extern HAL_StatusTypeDef HAL_SPIEx_FlushRxFifo(SPI_HandleTypeDef *hspi);
 #endif
 #ifdef TARGET_STM32H7
     #define SPI1_DMA_CLK_ENABLE()           __HAL_RCC_DMA2_CLK_ENABLE()
-    #define SPI1_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
+    #define SPI1_DMAMUX_CLK_ENABLE()        
 
     #define SPI2_DMA_CLK_ENABLE()           __HAL_RCC_DMA2_CLK_ENABLE()
     #define SPI2_DMAMUX_CLK_ENABLE()        __HAL_RCC_DMAMUX1_CLK_ENABLE()
@@ -504,6 +504,7 @@ static void _spi_init_direct(spi_t *obj, const spi_pinmap_t *pinmap)
         NVIC_SetPriority(SPI1_DMA_RX_IRQn, 1);
         NVIC_EnableIRQ(SPI1_DMA_RX_IRQn);
     } else if (handle->Instance == SPI2) {
+#ifdef TARGET_STML4
         /* Configure the NVIC for DMA */
         /* NVIC configuration for DMA transfer complete interrupt (SPIx_TX) */
         NVIC_SetPriority(SPI2_DMA_TX_IRQn, 1);
@@ -512,6 +513,7 @@ static void _spi_init_direct(spi_t *obj, const spi_pinmap_t *pinmap)
         /* NVIC configuration for DMA transfer complete interrupt (SPIx_RX) */
         NVIC_SetPriority(SPI2_DMA_RX_IRQn, 1);
         NVIC_EnableIRQ(SPI2_DMA_RX_IRQn);
+#endif
     }
 #endif /* USE_SPI_DMA */
 

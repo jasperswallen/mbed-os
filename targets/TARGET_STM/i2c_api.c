@@ -265,6 +265,7 @@ void i2c_ev_err_enable(i2c_t *obj, uint32_t handler)
 
 #if defined(USE_I2C_DMA)
     if (obj_s->handle.Instance == I2C1) {
+#ifdef TARGET_STM32L4
         /* Configure the NVIC for DMA */
         /* NVIC configuration for DMA transfer complete interrupt (I2Cx_TX) */
         NVIC_SetPriority(I2C1_DMA_TX_IRQn, prio);
@@ -273,6 +274,7 @@ void i2c_ev_err_enable(i2c_t *obj, uint32_t handler)
         /* NVIC configuration for DMA transfer complete interrupt (I2Cx_RX) */
         NVIC_SetPriority(I2C1_DMA_RX_IRQn, prio);
         NVIC_EnableIRQ(I2C1_DMA_RX_IRQn);
+#endif
     } else if (obj_s->handle.Instance == I2C2) {
         /* Configure the NVIC for DMA */
         /* NVIC configuration for DMA transfer complete interrupt (I2Cx_TX) */
@@ -431,7 +433,7 @@ void i2c_init_internal(i2c_t *obj, const i2c_pinmap_t *pinmap)
         // Configure I2C pins
         obj_s->event_i2cIRQ = I2C1_EV_IRQn;
         obj_s->error_i2cIRQ = I2C1_ER_IRQn;
-#if defined(USE_I2C_DMA)
+#if defined(USE_I2C_DMA) && defined TARGET_STM32L4
         // Initialise DMA for I2C
         obj_s->useDMA = 1;
 
@@ -1576,7 +1578,14 @@ void i2c_transfer_asynch(i2c_t *obj, const void *tx, size_t tx_length, void *rx,
         uint32_t op1 = I2C_FIRST_AND_LAST_FRAME;
         uint32_t op2 = I2C_LAST_FRAME;
         if ((obj_s->XferOperation == op1) || (obj_s->XferOperation == op2)) {
-            HAL_I2C_Master_Seq_Transmit_IT(handle, address, (uint8_t *)tx, tx_length, I2C_FIRST_FRAME);
+#if defined(USE_I2C_DMA)
+            if (obj_s->useDMA == 1) {
+                HAL_I2C_Master_Seq_Transmit_DMA(handle, address, (uint8_t *)tx, tx_length, I2C_FIRST_FRAME);
+            } else
+#endif
+            {
+                HAL_I2C_Master_Seq_Transmit_IT(handle, address, (uint8_t *)tx, tx_length, I2C_FIRST_FRAME);
+            }
         } else if ((obj_s->XferOperation == I2C_FIRST_FRAME) ||
                    (obj_s->XferOperation == I2C_NEXT_FRAME)) {
 #if defined(USE_I2C_DMA)
@@ -1589,7 +1598,14 @@ void i2c_transfer_asynch(i2c_t *obj, const void *tx, size_t tx_length, void *rx,
             }
         }
 #elif defined(I2C_IP_VERSION_V2)
-        HAL_I2C_Master_Seq_Transmit_IT(handle, address, (uint8_t *)tx, tx_length, I2C_FIRST_FRAME);
+#if defined(USE_I2C_DMA)
+        if (obj_s->useDMA == 1) {
+            HAL_I2C_Master_Seq_Transmit_DMA(handle, address, (uint8_t *)tx, tx_length, I2C_FIRST_FRAME);
+        } else
+#endif
+        {
+            HAL_I2C_Master_Seq_Transmit_IT(handle, address, (uint8_t *)tx, tx_length, I2C_FIRST_FRAME);
+        }
 #endif
     }
 }
